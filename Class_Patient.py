@@ -269,7 +269,7 @@ class Patient:
             high_clipped_per=clipped_data[clipped_data['ClippedPercent']>5]
             batch_list=high_clipped_per['BatchIndex'].values
             for ind,val in enumerate(batch_list,0): ##from sub batch to batch
-                if ind%2==1:
+                if val%2==1:
                     batch_list[ind]+=1
                 batch_list[ind]=batch_list[ind]/2
             batch_set=set(batch_list) ##get unique

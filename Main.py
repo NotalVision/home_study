@@ -12,6 +12,7 @@ from Cloud_Analysis_ver1_2_test.VG_88_bscans_analysis import class_ditrib1,class
 from datetime import date
 import xlsxwriter
 from Cloud_Analysis_ver1_2_test.Utils import merge_eye_excels
+import sys
 
 
 
@@ -20,11 +21,17 @@ from Cloud_Analysis_ver1_2_test.Utils import merge_eye_excels
 if __name__ =="__main__":
     while True:
         start_time = time.time()
-        data_folder = r'\\V-S-G-RNDSTORE\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data_Testing'
+        env=os.environ._data['COMPUTERNAME']
+        if 'V-S-G' in env:
+            network='V-S-G-RNDSTORE'
+        else:
+            network='nv-nas01'
+        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
+
         config_path = os.path.join(data_folder, 'mailing_list.txt')
-        # with open(config_path) as f:
-        #     mailing_list = [i.strip() for i in f.readlines()]
-        patients = ['NH02001']#, 'NH02002']
+        with open(config_path) as f:
+            mailing_list = [i.strip() for i in f.readlines()]
+        patients = ['NH02001','NH02002']
         send_email=True
         for patientID in patients:
             total_DB=[]
@@ -51,7 +58,7 @@ if __name__ =="__main__":
                     #for address in mailing_list:
                         #print (address)
                     #msg['To'] = str(address)
-                    msg['To']='shiria@notalvision.com'
+                    msg['To']=mailing_list
                     # Send the message via our own SMTP server.
                     s.send_message(msg)
                     s.quit()

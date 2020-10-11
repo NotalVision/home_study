@@ -3,8 +3,8 @@ import pyodbc
 def check_if_downloaded():
 # Server details
     conn = pyodbc.connect('Driver={SQL Server};'
-                          'Server=172.30.2.117;'
-                          'Database=OCTanalysisBackupForTesting;'
+                          'Server=172.30.2.246;'
+                          'Database=OCTanalysis;' #BackupForTesting
                           'uid=shiri_almog;pwd=shiri@123')
     cursor = conn.cursor()
 
