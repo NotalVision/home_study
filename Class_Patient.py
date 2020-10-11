@@ -7,11 +7,11 @@ import scipy.io as sio
 from email.message import EmailMessage
 import smtplib
 import csv
-from Cloud_Analysis_ver1_2_test.Alerts import Alert
+from Alerts import Alert
 import pickle
 pd.options.mode.chained_assignment = None
-from Cloud_Analysis_ver1_2_test.DB_connection import check_if_downloaded
-from Cloud_Analysis_ver1_2_test.Patient_Utils import check_vg_status,check_if_timeout
+from DB_connection import check_if_downloaded
+from Patient_Utils import check_vg_status,check_if_timeout
 
 
 

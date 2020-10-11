@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from Cloud_Analysis_ver1_2_test.Utils import merge_eye_excels
+from Utils import merge_eye_excels
 
 def class_ditrib1(data_folder,patient):
     patientID=patient.patient_ID

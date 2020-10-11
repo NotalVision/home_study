@@ -3,15 +3,15 @@ from email.message import EmailMessage
 import smtplib
 import json
 import time
-from Cloud_Analysis_ver1_2_test.Class_Patient import Patient
-from Cloud_Analysis_ver1_2_test.Analysis_Graphs import load_events,analysis_graphs
-from Cloud_Analysis_ver1_2_test.ver3_graphs import ver3_create_graphs
-from Cloud_Analysis_ver1_2_test.compliance_graph import compliance
+from Class_Patient import Patient
+from Analysis_Graphs import load_events,analysis_graphs
+from ver3_graphs import ver3_create_graphs
+from compliance_graph import compliance
 import pandas as pd
-from Cloud_Analysis_ver1_2_test.VG_88_bscans_analysis import class_ditrib1,class_distrib2
+from VG_88_bscans_analysis import class_ditrib1,class_distrib2
 from datetime import date
 import xlsxwriter
-from Cloud_Analysis_ver1_2_test.Utils import merge_eye_excels
+from Utils import merge_eye_excels
 import sys
 
 
