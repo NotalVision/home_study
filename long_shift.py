@@ -1,0 +1,119 @@
+import pandas as pd
+import numpy as np
+import os
+from os import path
+from datetime import date
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from DB_connection import check_if_downloaded
+import scipy.io as sio
+
+
+def long_shift_DB(patientID,path):
+    columns_new_row=['Patient','Scan','Date - Time','Eye','x_long_shift','y_long_shift']
+    total_DB=[]
+    for eye in ['R','L']:
+        db_path = os.path.join(path,patientID, 'Analysis', 'long_shift_DB.xlsx')
+        if os.path.isfile(db_path):
+            DB = pd.read_excel(db_path,sheet_name=eye)
+        else:
+            DB = pd.DataFrame(columns=columns_new_row)
+        scans_path=os.path.join(path, patientID,eye ,'Hoct')
+        scans_list=os.listdir(scans_path)
+        for scan in scans_list:
+            if 'TST' in scan:
+                scan_path = os.path.join(scans_path,scan)
+                data_sum = scan_path + '/DataSummary.txt'  ##get session_id and scan_id
+                try:
+                    with open(data_sum, 'r') as f:
+                        session_ID = f.readline()
+                        scan_ID = f.readline()
+                except:
+                    continue
+                isDownloaded=check_if_downloaded()
+                if int(session_ID[12:-1]) in isDownloaded:
+                    new_row = pd.DataFrame(columns=columns_new_row)
+                    new_row.loc[0, 'Scan'] = scan_path
+                    new_row.loc[0, 'Patient'] = patientID
+                    new_row.loc[0, 'Eye'] = eye
+                    date_time = scan[10:29]
+                    try:
+                        if date_time in DB['Date - Time'].array:
+                            continue
+                    except:
+                        pass
+
+                    new_row.loc[0, 'Date - Time'] = date_time
+
+                    long_path = scan_path + r'\Longitudinal_ver3\VG\Data\OrigShiftCalcLongi.mat'
+                    if not os.path.isfile(long_path):
+                        long_path = scan_path + r'\Longitud nal_2\VG\Data\OrigShiftCalcLongi.mat'
+                    if not os.path.isfile(long_path):
+                        long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
+
+                    try:
+                        shift = sio.loadmat(long_path)
+                        shift_x = shift['shift'][0][0]
+                        shift_y = shift['shift'][0][1]
+
+                    except:
+                        try:
+                            shift_x = shift['OrigShiftCalcLongi'][0][0]
+                            shift_y = shift['OrigShiftCalcLongi'][0][1]
+                        except:
+                            shift_x = np.nan
+                            shift_y = np.nan
+                            print('no OrigShiftCalcLongi for ' + scan)
+
+                    new_row.loc[0, 'x_long_shift'] = shift_x
+                    new_row.loc[0, 'y_long_shift'] = shift_y
+
+                    DB = pd.concat([DB, new_row])
+        DB = DB.sort_values(by='Date - Time')
+        total_DB.append(DB)
+    writer = pd.ExcelWriter(db_path , engine='xlsxwriter')
+    total_DB[1].to_excel(writer, sheet_name='L')
+    total_DB[0].to_excel(writer, sheet_name='R')
+    writer.save()
+
+
+    fig = plt.figure(figsize=(20, 10))
+    for i, eye in enumerate(['R', 'L'], 0):
+        scan_quality_table = pd.read_excel(db_path,sheet_name=eye)
+        x_shift = scan_quality_table['x_long_shift']
+        y_shift = scan_quality_table['y_long_shift']
+        time_axis = pd.to_datetime(scan_quality_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
+        time_axis = pd.DatetimeIndex(time_axis).date
+        ax = fig.add_subplot(2, 1, i + 1)
+        plt.subplots_adjust(hspace=0.3)
+        ax.plot(time_axis, x_shift, marker='o')
+        ax.plot(time_axis, y_shift, marker='o')
+        if eye == 'L':
+            plt.title('LEFT EYE - Longitudinal shift', fontsize=16)
+        if eye == 'R':
+            plt.title('RIGHT EYE - Longitudinal shift ', fontsize=16)
+        ax.set_xlabel('Date')
+        formatter = mdates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(formatter)
+        ax.set_ylabel('Shift [um]')
+        plt.ylim((min(min(x_shift),min(y_shift)),max(max(x_shift),max(y_shift))))
+        ax.xaxis.set_ticks(time_axis)
+        plt.xticks(rotation=45)
+        plt.xticks(fontsize=8)
+        # Get events
+        # if with_events == True:
+        #     installation = pd.to_datetime(events['Installation'], format='%d_%m_%Y')
+        #     injections = pd.to_datetime(events['Injection_{}'.format(eye)], format='%d_%m_%Y-%H')
+        #     visits = pd.to_datetime(events['Visit'], format='%d_%m_%Y')
+        #     rep = pd.to_datetime(events['Device Replaced'], format='%d_%m_%Y')
+        #     events_list = [installation, injections, visits, rep]
+        #     for event in events_list:
+        #         # ax.annotate(event.name, xy=(event.T, -530), xytext=(event.T, -460),
+        #         #             arrowprops=dict(facecolor='black', shrink=0.01))
+        #         ax.annotate(event.name, xy=(event.T, -500), xytext=(event.T, -430),
+        #                     arrowprops=dict(facecolor='black', shrink=0.01))
+        plt.legend(['x-axis', 'y-axis'])
+        plt.grid()
+    plt.savefig(os.path.join(path,patientID, 'Analysis','Plots', 'Long_shift.png'))
+
+long_shift_DB('NH02002',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')

@@ -75,6 +75,8 @@ def compliance(data_folder, patient,save_path,events):
         ax.set_ylabel('Compliance')
         plt.ylim((0, 1.1))
         ax.xaxis.set_ticks(time_axis)
+        plt.xticks(fontsize=8)
+        plt.xticks(rotation=45)
         if eye=='L':
             plt.title('LEFT EYE - Compliance and Success',fontsize=16)
         if eye=='R':

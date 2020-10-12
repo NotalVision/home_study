@@ -13,6 +13,7 @@ from datetime import date
 import xlsxwriter
 from Utils import merge_eye_excels
 import sys
+from long_shift import long_shift_DB
 
 
 
@@ -38,7 +39,7 @@ if __name__ =="__main__":
             for eye in ['R','L']:
                 new_patient = Patient(data_folder, patientID,eye)
                 new_patient=new_patient.full_analysis()
-                if new_patient=='no new data': ##No new scans detected for this patient
+                if new_patient=='no new data':
                     continue
                 total_DB.append(new_patient.final_DB) ## want to create one DB for both eyes
 
@@ -51,14 +52,7 @@ if __name__ =="__main__":
                     msg.set_content(new_patient.email_text)
                     msg['Subject'] = 'Attention: Patient {}, {} (Local Host)'.format(patientID,eye)
                     msg['From'] = 'shirialm1994@gmail.com'
-                    # with open("config.json", 'r') as read_file:
-                    #data=json.load(read_file)
-                    #mailing_list=data["mailing list"]
-                    #print(mailing_list)
-                    #for address in mailing_list:
-                        #print (address)
-                    #msg['To'] = str(address)
-                    msg['To']=mailing_list
+                    msg['To']=mailing_list #'shiria@notalvision.com'#
                     # Send the message via our own SMTP server.
                     s.send_message(msg)
                     s.quit()
@@ -90,6 +84,8 @@ if __name__ =="__main__":
             compliance(data_folder,patientID,save_fig_path,events)
             class_ditrib1(data_folder,new_patient)
             class_distrib2(data_folder,new_patient)
+            #long_shift_DB(patientID,data_folder)
+
 
         print (time.asctime(time.localtime(time.time())))
         print ('elapsed_time=',time.time() - start_time)

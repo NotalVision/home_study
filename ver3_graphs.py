@@ -34,6 +34,7 @@ def ver3_create_graphs(data_folder, patient,save_path,events,with_events):
         plt.ylim((0, 100))
         ax.axhline(y=88, xmin=0, xmax=1, color='r', linestyle='--')
         ax.xaxis.set_ticks(time_axis)
+        plt.xticks(rotation=45)
         plt.legend(['Class 1', 'Class 2','Class 3'])
         # Get events
         if with_events==True:

@@ -47,27 +47,31 @@ class Alert:
         alerts_object=patient.alert
         alerts_object=alerts_object.check_if_outdated()
         alerts = alerts_object.alert_dic
-        e = patient.eye
-        date = new_row['Date - Time'].values[0]
-        if abs(new_row['x_long_shift'].values[0]) >= 300:
 
-            alerts[e]['long_x_shift'][date]=('Scan Date: '+str(new_row['Date - Time'].values[0]) + ', Scan ID: '
-                                             +str(new_row['ScanID'].values[0][:-1])+ '\nShift: ' +str(new_row['x_long_shift'].values[0]) + '\n'+scan_path+'\n')
-            if len(alerts[e]['long_x_shift']) >= 2:
-                email_text += 'Large longitudinal shift detected in x axis in the two of the last scans:' + '\n'
-                for i in alerts[e]['long_x_shift']:
-                    email_text += str(alerts[e]['long_x_shift'][i])
-                email_text += '\n'
-                alerts[e]['long_x_shift'] = {}
-        if abs(new_row['y_long_shift'].values[0]) >= 300:
-            alerts[e]['long_y_shift'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-                                             ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nShift: ' + str(new_row['y_long_shift'].values[0]) + '\n'+scan_path+'\n')
-            if len(alerts[e]['long_y_shift']) >= 2:
-                email_text += 'Large longitudinal shift detected in y axis in the last two scans:' + '\n'
-                for i in alerts[e]['long_y_shift']:
-                    email_text += str(alerts[e]['long_y_shift'][i])
-                email_text+='\n'
-                alerts[e]['long_y_shift'] = {}
+        e = patient.eye
+        # DB_long=pd.read_excel(os.path.join(patient.data_path,'Analysis','long_shift_DB.xlsx'),sheet_name=e)
+        # x_long_shift=DB_long.loc['Date - Time','x_long_shift']
+        # y_long_shift = DB_long.loc['Date - Time', 'y_long_shift']
+        date = new_row['Date - Time'].values[0]
+        # if abs(new_row['x_long_shift'].values[0]) >= 300:
+        # if abs(x_long_shift) >= 300:
+        #     alerts[e]['long_x_shift'][date]=('Scan Date: '+str(new_row['Date - Time'].values[0]) + ', Scan ID: '
+        #                                      +str(new_row['ScanID'].values[0][:-1])+ '\nShift: ' +str(new_row['x_long_shift'].values[0]) + '\n'+scan_path+'\n')
+        #     if len(alerts[e]['long_x_shift']) >= 2:
+        #         email_text += 'Large longitudinal shift detected in x axis in the two of the last scans:' + '\n'
+        #         for i in alerts[e]['long_x_shift']:
+        #             email_text += str(alerts[e]['long_x_shift'][i])
+        #         email_text += '\n'
+        #         alerts[e]['long_x_shift'] = {}
+        # if abs(y_long_shift) >= 300:
+        #     alerts[e]['long_y_shift'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
+        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nShift: ' + str(new_row['y_long_shift'].values[0]) + '\n'+scan_path+'\n')
+        #     if len(alerts[e]['long_y_shift']) >= 2:
+        #         email_text += 'Large longitudinal shift detected in y axis in the last two scans:' + '\n'
+        #         for i in alerts[e]['long_y_shift']:
+        #             email_text += str(alerts[e]['long_y_shift'][i])
+        #         email_text+='\n'
+        #         alerts[e]['long_y_shift'] = {}
         if abs(new_row['# Class 1'].values[0]) <=70:
             alerts[e]['class_1'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
                                              ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 bscans: ' + str(new_row['# Class 1'].values[0]) + '\n'+scan_path+'\n')
@@ -81,7 +85,7 @@ class Alert:
             alerts[e]['RegStdX'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
                                              ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_X: ' + str(new_row['RegStdX'].values[0]) + 'um \n'+scan_path+'\n')
             if len(alerts[e]['RegStdX']) >= 2:
-                email_text += 'RegSTD in the X axis was high in the 2 of the last scans:' + '\n'
+                email_text += 'RegSTD in the X axis was high in 2 of the last scans:' + '\n'
                 for i in alerts[e]['RegStdX']:
                     email_text += str(alerts[e]['RegStdX'][i])
                 email_text+='\n'
@@ -90,7 +94,7 @@ class Alert:
             alerts[e]['RegStdY'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
                                              ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_Y: ' + str(new_row['RegStdY'].values[0]) + 'um \n'+scan_path+'\n')
             if len(alerts[e]['RegStdY']) >= 2:
-                email_text += 'RegSTD in the Y axis was high in the 2 of the last scans:' + '\n'
+                email_text += 'RegSTD in the Y axis was high in 2 of the last scans:' + '\n'
                 for i in alerts[e]['RegStdY']:
                     email_text += str(alerts[e]['RegStdY'][i])
                 email_text+='\n'

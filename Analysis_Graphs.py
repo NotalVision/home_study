@@ -46,6 +46,8 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
         ax.set_ylabel('Time [sec]')
         plt.ylim((0, 100))
         ax.xaxis.set_ticks(time_axis)
+        plt.xticks(fontsize=8)
+        plt.xticks(rotation=45)
         plt.legend(['Adjustment Time', 'Total Time','Raster Time'])
         # Get events
         if with_events==True:
@@ -82,6 +84,8 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
         ax.set_ylabel('MSI / Vmsi')
         plt.ylim((0, 8))
         ax.xaxis.set_ticks(time_axis)
+        plt.xticks(fontsize=8)
+        plt.xticks(rotation=45)
         plt.legend(['MSI','Vmsi'])
         # Get events
         if with_events == True:
@@ -119,6 +123,8 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
         plt.ylim((0,110))
         ax.axhline(y=88, xmin=0, xmax=1,color='r',linestyle='--')
         ax.xaxis.set_ticks(time_axis)
+        plt.xticks(fontsize=8)
+        plt.xticks(rotation=45)
 
         # Get events
         if with_events == True:
@@ -156,6 +162,8 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
         ax.set_ylabel('RegStdX/RegStdY [um]')
         plt.ylim((0,350))
         ax.xaxis.set_ticks(time_axis)
+        plt.xticks(fontsize=8)
+        plt.xticks(rotation=45)
         # Get events
         if with_events == True:
             installation = pd.to_datetime(events['Installation'], format='%d_%m_%Y')
@@ -172,42 +180,42 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
 
 
     # longitudinal shift
-    fig = plt.figure(figsize=(20, 10))
-    for i, eye in enumerate(['R', 'L'], 0):
-        scan_quality_table = full_table[full_table['Eye'] == eye]
-        x_shift = scan_quality_table['x_long_shift']
-        y_shift = scan_quality_table['y_long_shift']
-        time_axis = pd.to_datetime(scan_quality_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
-        time_axis = pd.DatetimeIndex(time_axis).date
-        ax = fig.add_subplot(2, 1, i + 1)
-        plt.subplots_adjust(hspace=0.3)
-        ax.plot(time_axis, x_shift, marker='o')
-        ax.plot(time_axis, y_shift, marker='o')
-        if eye == 'L':
-            plt.title('LEFT EYE - Longitudinal shift', fontsize=16)
-        if eye == 'R':
-            plt.title('RIGHT EYE - Longitudinal shift ', fontsize=16)
-        ax.set_xlabel('Date')
-        formatter = mdates.DateFormatter('%m-%d')
-        ax.xaxis.set_major_formatter(formatter)
-        ax.set_ylabel('Shift [um]')
-        plt.ylim((-600, 500))
-        ax.xaxis.set_ticks(time_axis)
-        # Get events
-        if with_events == True:
-            installation = pd.to_datetime(events['Installation'], format='%d_%m_%Y')
-            injections = pd.to_datetime(events['Injection_{}'.format(eye)], format='%d_%m_%Y-%H')
-            visits = pd.to_datetime(events['Visit'], format='%d_%m_%Y')
-            rep = pd.to_datetime(events['Device Replaced'], format='%d_%m_%Y')
-            events_list = [installation, injections, visits, rep]
-            for event in events_list:
-                # ax.annotate(event.name, xy=(event.T, -530), xytext=(event.T, -460),
-                #             arrowprops=dict(facecolor='black', shrink=0.01))
-                ax.annotate(event.name, xy=(event.T, -500), xytext=(event.T, -430),
-                            arrowprops=dict(facecolor='black', shrink=0.01))
-        plt.legend(['x-axis', 'y-axis'])
-        plt.grid()
-    plt.savefig(save_path + '/Long_shift.png')
+    # fig = plt.figure(figsize=(20, 10))
+    # for i, eye in enumerate(['R', 'L'], 0):
+    #     scan_quality_table = full_table[full_table['Eye'] == eye]
+    #     x_shift = scan_quality_table['x_long_shift']
+    #     y_shift = scan_quality_table['y_long_shift']
+    #     time_axis = pd.to_datetime(scan_quality_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
+    #     time_axis = pd.DatetimeIndex(time_axis).date
+    #     ax = fig.add_subplot(2, 1, i + 1)
+    #     plt.subplots_adjust(hspace=0.3)
+    #     ax.plot(time_axis, x_shift, marker='o')
+    #     ax.plot(time_axis, y_shift, marker='o')
+    #     if eye == 'L':
+    #         plt.title('LEFT EYE - Longitudinal shift', fontsize=16)
+    #     if eye == 'R':
+    #         plt.title('RIGHT EYE - Longitudinal shift ', fontsize=16)
+    #     ax.set_xlabel('Date')
+    #     formatter = mdates.DateFormatter('%m-%d')
+    #     ax.xaxis.set_major_formatter(formatter)
+    #     ax.set_ylabel('Shift [um]')
+    #     plt.ylim((-600, 500))
+    #     ax.xaxis.set_ticks(time_axis)
+    #     # Get events
+    #     if with_events == True:
+    #         installation = pd.to_datetime(events['Installation'], format='%d_%m_%Y')
+    #         injections = pd.to_datetime(events['Injection_{}'.format(eye)], format='%d_%m_%Y-%H')
+    #         visits = pd.to_datetime(events['Visit'], format='%d_%m_%Y')
+    #         rep = pd.to_datetime(events['Device Replaced'], format='%d_%m_%Y')
+    #         events_list = [installation, injections, visits, rep]
+    #         for event in events_list:
+    #             # ax.annotate(event.name, xy=(event.T, -530), xytext=(event.T, -460),
+    #             #             arrowprops=dict(facecolor='black', shrink=0.01))
+    #             ax.annotate(event.name, xy=(event.T, -500), xytext=(event.T, -430),
+    #                         arrowprops=dict(facecolor='black', shrink=0.01))
+    #     plt.legend(['x-axis', 'y-axis'])
+    #     plt.grid()
+    # plt.savefig(save_path + '/Long_shift.png')
     #plt.show()
 
 
