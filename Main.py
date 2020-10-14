@@ -32,7 +32,7 @@ if __name__ =="__main__":
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
-        patients = ['NH02002']#,'NH02002']
+        patients = ['NH02003']#,'NH02002','NH02003']
         send_email=True
         for patientID in patients:
             total_DB=[]
@@ -52,7 +52,7 @@ if __name__ =="__main__":
                     msg.set_content(new_patient.email_text)
                     msg['Subject'] = 'Attention: Patient {}, {} (Local Host)'.format(patientID,eye)
                     msg['From'] = 'shirialm1994@gmail.com'
-                    msg['To']=mailing_list #'shiria@notalvision.com'#
+                    msg['To']=mailing_list #'shiria@notalvision.com'
                     # Send the message via our own SMTP server.
                     s.send_message(msg)
                     s.quit()

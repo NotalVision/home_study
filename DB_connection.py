@@ -8,7 +8,7 @@ def check_if_downloaded():
                           'uid=shiri_almog;pwd=shiri@123')
     cursor = conn.cursor()
 
-    cursor.execute("SELECT SessionID FROM SessionDownload WHERE ModesDownloadedMask % 10 =1")
+    cursor.execute("SELECT SessionID FROM SessionDownload WHERE ModesDownloadedMask=10 OR ModesDownloadedMask=11")
     records = cursor.fetchall()
     downloaded_sessions=[]
     for record in records:

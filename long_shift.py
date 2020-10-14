@@ -116,4 +116,4 @@ def long_shift_DB(patientID,path):
         plt.grid()
     plt.savefig(os.path.join(path,patientID, 'Analysis','Plots', 'Long_shift.png'))
 
-long_shift_DB('NH02002',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
+long_shift_DB('NH02001',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')

@@ -182,7 +182,7 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
     fig = plt.figure(figsize=(20, 10))
     for i, eye in enumerate(['R', 'L'], 0):
         scan_quality_table = full_table[full_table['Eye'] == eye]
-        Clipped = scan_quality_table['ClippedPercent']
+        Clipped = scan_quality_table['ClippedPrecent']
         time_axis = pd.to_datetime(scan_quality_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
         time_axis = pd.DatetimeIndex(time_axis).date
         ax = fig.add_subplot(2, 1, i + 1)
