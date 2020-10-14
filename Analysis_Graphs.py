@@ -178,6 +178,41 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
         plt.grid()
     plt.savefig(save_path + '/Regx_Regy.png')
 
+    # Clipped
+    fig = plt.figure(figsize=(20, 10))
+    for i, eye in enumerate(['R', 'L'], 0):
+        scan_quality_table = full_table[full_table['Eye'] == eye]
+        Clipped = scan_quality_table['ClippedPercent']
+        time_axis = pd.to_datetime(scan_quality_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
+        time_axis = pd.DatetimeIndex(time_axis).date
+        ax = fig.add_subplot(2, 1, i + 1)
+        plt.subplots_adjust(hspace=0.3)
+        ax.plot(time_axis, Clipped, marker='o')
+        if eye == 'L':
+            plt.title('LEFT EYE - Mean Clipped Percentage', fontsize=16)
+        if eye == 'R':
+            plt.title('RIGHT EYE - Mean Clipped Percentage ', fontsize=16)
+        ax.set_xlabel('Date')
+        formatter = mdates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(formatter)
+        ax.set_ylabel('% of Clipped BScans')
+        plt.ylim((0, 100))
+        ax.xaxis.set_ticks(time_axis)
+        plt.xticks(fontsize=8)
+        plt.xticks(rotation=45)
+        # Get events
+        if with_events == True:
+            installation = pd.to_datetime(events['Installation'], format='%d_%m_%Y')
+            injections = pd.to_datetime(events['Injection_{}'.format(eye)], format='%d_%m_%Y-%H')
+            visits = pd.to_datetime(events['Visit'], format='%d_%m_%Y')
+            rep = pd.to_datetime(events['Device Replaced'], format='%d_%m_%Y')
+            events_list = [installation, injections, visits, rep]
+            for event in events_list:
+                ax.annotate(event.name, xy=(event.T, 0), xytext=(event.T, 20),
+                            arrowprops=dict(facecolor='black', shrink=0.01))
+        plt.grid()
+    plt.savefig(save_path + '/Clipped.png')
+
 
     # longitudinal shift
     # fig = plt.figure(figsize=(20, 10))

@@ -37,10 +37,7 @@ class Alert:
     def load_existing(self):
         with open(self.path + '/alerts.pkl', 'rb') as f:
             self.alert_dic=pickle.load(f)
-        # for key in self.params_dic.keys():
-        #     if key not in self.alert_dic.keys():
-        #         self.alert_dic['L']
-        return self
+            return self
 
     def create_new(self):
         #alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
