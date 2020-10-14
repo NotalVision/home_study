@@ -1,6 +1,8 @@
 import pandas as pd
 import xlsxwriter
 import os
+import smtplib
+from email.message import EmailMessage
 
 def merge_eye_excels(new_patient,path,new_path):
     '''
@@ -21,3 +23,16 @@ def merge_eye_excels(new_patient,path,new_path):
     os.remove(path_str.format(new_patient.patient_ID,'L'))
     os.remove(path_str.format(new_patient.patient_ID,'R'))
     return
+
+def send_email_func(email_text,mailing_list,msg_subject):
+    s = smtplib.SMTP(host='smtp.gmail.com', port=587)
+    s.starttls()
+    s.login("shirialm1994@gmail.com", "Zohar256")
+    msg = EmailMessage()
+    msg.set_content(email_text)
+    msg['Subject'] = msg_subject
+    msg['From'] = 'shirialm1994@gmail.com'
+    msg['To'] = mailing_list  # 'shiria@notalvision.com'#
+    # Send the message via our own SMTP server.
+    s.send_message(msg)
+    s.quit()

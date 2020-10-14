@@ -1,14 +1,23 @@
 import pyodbc
 
-def check_if_downloaded():
+def check_if_downloaded(host):
 # Server details
-    conn = pyodbc.connect('Driver={SQL Server};'
-                          'Server=172.30.2.246;'
-                          'Database=OCTanalysis;' #BackupForTesting
-                          'uid=shiri_almog;pwd=shiri@123')
-    cursor = conn.cursor()
+    if host=='Local Host':
+        conn = pyodbc.connect('Driver={SQL Server};'
+                              'Server=172.30.2.246;'
+                              'Database=OCTanalysis;'
+                              'uid=shiri_almog;pwd=shiri@123')
+        cursor = conn.cursor()
+        cursor.execute("SELECT SessionID FROM SessionDownload WHERE ModesDownloadedMask=10 OR ModesDownloadedMask=11")
 
-    cursor.execute("SELECT SessionID FROM SessionDownload WHERE ModesDownloadedMask % 10 =1")
+    else:
+        conn = pyodbc.connect('Driver={SQL Server};'
+                              'Server=172.30.2.117;'
+                              'Database=OCTanalysisBackupForTesting;'
+                              'uid=shiri_almog;pwd=shiri@123')
+        cursor = conn.cursor()
+        cursor.execute("SELECT SessionID FROM SessionDownload WHERE ModesDownloadedMask=01 OR ModesDownloadedMask=11")
+
     records = cursor.fetchall()
     downloaded_sessions=[]
     for record in records:

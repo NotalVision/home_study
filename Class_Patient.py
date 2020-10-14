@@ -265,7 +265,7 @@ class Patient:
             print('No VG_Bscan file for scan ' + scan)
             return -1
         try:
-            clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPercent', 'IsClipped']]
+            clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPrecent', 'IsClipped']]
             high_clipped_per=clipped_data[clipped_data['ClippedPercent']>5]
             batch_list=high_clipped_per['BatchIndex'].values
             for ind,val in enumerate(batch_list,0): ##from sub batch to batch
