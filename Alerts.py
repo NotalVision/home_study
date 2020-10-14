@@ -25,17 +25,29 @@ class Alert:
         if not os.path.isfile(self.text_file):
             with open(self.text_file,'w') as f:
                 f.writelines('Alert History for patient '+patient.patient_ID)
+        self.params_path = os.path.join(self.path, 'Alerts_params.xlsx')
+        self.params_dic={}
+        if os.path.isfile(self.params_path):
+            a=pd.read_excel(self.params_path)
+            for ind,param in a.iterrows():
+                row=param.T
+                self.params[row.T[0]]=[row.T[1],row.T[2],row.T[3]]
+
 
     def load_existing(self):
         with open(self.path + '/alerts.pkl', 'rb') as f:
             self.alert_dic=pickle.load(f)
-            return self
+        # for key in self.params_dic.keys():
+        #     if key not in self.alert_dic.keys():
+        #         self.alert_dic['L']
+        return self
 
     def create_new(self):
-        alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
+        #alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
+        alert_types=self.params_dic.keys()
         eye = ['L', 'R']
 
-        partition_by_alert = dict(zip(alert_types, [dict() for i in alert_types]))  # first dic - organs
+        partition_by_alert = dict(zip(alert_types, [dict() for i in alert_types]))
         self.alert_dic = dict(zip(eye, [copy.deepcopy(partition_by_alert) for i in eye]))
         with open(self.path + '/alerts.pkl', 'wb') as f:
             pickle.dump(self.alert_dic, f, pickle.HIGHEST_PROTOCOL)
@@ -72,6 +84,19 @@ class Alert:
         #             email_text += str(alerts[e]['long_y_shift'][i])
         #         email_text+='\n'
         #         alerts[e]['long_y_shift'] = {}
+        for param in self.params_dic.keys():
+            if (abs(new_row[param]) <= self.params_dic[param][0]) or (abs(new_row[param]) >= self.params_dic[param][1]):
+                alerts[e][param][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) +
+                                              ', Scan ID: ' + str(
+                            new_row['ScanID'].values[0][:-1]) + '\n'+ param + str(
+                            new_row[param].values[0]) + '\n' + scan_path + '\n')
+                if len(alerts[e][param]) >= 2:
+                    email_text += '{} was low in the last 2 scans:'.format(param) + '\n'
+                    for i in alerts[e][param]:
+                        email_text += str(alerts[e][param][i])
+                    email_text += '\n'
+                    alerts[e][param] = {}
+
         if abs(new_row['# Class 1'].values[0]) <=70:
             alerts[e]['class_1'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
                                              ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 bscans: ' + str(new_row['# Class 1'].values[0]) + '\n'+scan_path+'\n')

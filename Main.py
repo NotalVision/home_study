@@ -13,7 +13,7 @@ from datetime import date
 import xlsxwriter
 from Utils import merge_eye_excels
 import sys
-from long_shift import long_shift_DB
+#from long_shift import long_shift_DB
 
 
 
@@ -32,7 +32,7 @@ if __name__ =="__main__":
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
-        patients = ['NH02001','NH02002']
+        patients = ['NH02002']#,'NH02002']
         send_email=True
         for patientID in patients:
             total_DB=[]
