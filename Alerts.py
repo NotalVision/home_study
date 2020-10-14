@@ -25,6 +25,10 @@ class Alert:
         if not os.path.isfile(self.text_file):
             with open(self.text_file,'w') as f:
                 f.writelines('Alert History for patient '+patient.patient_ID)
+        self.params_path=os.path.join(self.path,'Alerts_paramas.xlsx')
+        # if
+        # with open()
+        # self.params=pd.read_excel(os.path.join(self.path,'Alerts_paramas.xlsx'))
 
     def load_existing(self):
         with open(self.path + '/alerts.pkl', 'rb') as f:

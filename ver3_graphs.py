@@ -47,4 +47,4 @@ def ver3_create_graphs(data_folder, patient,save_path,events,with_events):
                 ax.annotate(event.name,xy=(event.T,0),xytext=(event.T,6),arrowprops=dict(facecolor='black', shrink=0.01))
         plt.grid()
 
-    plt.savefig(save_path+'/ver3_classes.png')
+    plt.savefig(save_path+'/longitudinal_class_distibution.png')
