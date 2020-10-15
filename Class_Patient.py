@@ -43,7 +43,7 @@ class Patient:
 
 
 
-    def full_analysis(self):
+    def full_analysis(self,host):
         if self.new==1:
             self.DB=pd.DataFrame()
             self.ver3_DB=pd.DataFrame()
@@ -56,7 +56,7 @@ class Patient:
         except:
             scans_list=[]
 
-        isDownloaded = check_if_downloaded()
+        isDownloaded = check_if_downloaded(host)
         new_data=False
         for scan in scans_list:
             if 'TST' in scan:
