@@ -43,7 +43,6 @@ if __name__ =="__main__":
             for eye in ['R','L']:
                 new_patient = Patient(data_folder, patientID,eye)
                 new_patient=new_patient.full_analysis()
-                timezone = pytz.timezone("America/Los_Angeles")
                 if new_patient=='no new data':
                     with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'r') as f:
                         last_scan_date = f.readlines()
