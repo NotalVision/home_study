@@ -42,14 +42,14 @@ if __name__ =="__main__":
             total_DB=[]
             for eye in ['R','L']:
                 new_patient = Patient(data_folder, patientID,eye)
-                new_patient=new_patient.full_analysis()
+                new_patient=new_patient.full_analysis(host)
                 if new_patient=='no new data':
                     with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'r') as f:
                         last_scan_date = f.readlines()
                         last_scan_date=datetime.strptime(last_scan_date[0], '%Y-%m-%d')
                         last_scan_date=last_scan_date.date()
                         today = datetime.now(pytz.timezone("{}".format(set_tz)))
-                        if eye=='L' and (today.date()-last_scan_date).days  >= 0:
+                        if eye=='L' and (today.date()-last_scan_date).days  >= 2:
                             yesterday = (today - timedelta(1)).date()
                             email_text = 'No scans were received from any of the patients on {}'.format(yesterday)
                             msg_subject = 'Attention: No incoming scans on {}'.format(yesterday)

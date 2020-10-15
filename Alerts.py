@@ -27,11 +27,11 @@ class Alert:
                 f.writelines('Alert History for patient '+patient.patient_ID)
         self.params_path = os.path.join(self.path, 'Alerts_params.xlsx')
         self.params_dic={}
-        if os.path.isfile(self.params_path):
-            a=pd.read_excel(self.params_path)
-            for ind,param in a.iterrows():
-                row=param.T
-                self.params[row.T[0]]=[row.T[1],row.T[2],row.T[3]]
+        # if os.path.isfile(self.params_path):
+        #     a=pd.read_excel(self.params_path)
+        #     for ind,param in a.iterrows():
+        #         row=param.T
+        #         self.params[row.T[0]]=[row.T[1],row.T[2],row.T[3]]
 
 
     def load_existing(self):
