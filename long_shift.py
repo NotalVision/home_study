@@ -10,6 +10,13 @@ import scipy.io as sio
 
 
 def long_shift_DB(patientID,path):
+    env = os.environ._data['COMPUTERNAME']
+    if 'V-S-G' in env:
+        network = 'V-S-G-RNDSTORE'
+        host = 'Cloud'
+    else:
+        network = 'nv-nas01'
+        host = 'Local Host'
     columns_new_row=['Patient','Scan','Date - Time','Eye','x_long_shift','y_long_shift']
     total_DB=[]
     for eye in ['R','L']:
@@ -30,7 +37,7 @@ def long_shift_DB(patientID,path):
                         scan_ID = f.readline()
                 except:
                     continue
-                isDownloaded=check_if_downloaded()
+                isDownloaded=check_if_downloaded(host)
                 if int(session_ID[12:-1]) in isDownloaded:
                     new_row = pd.DataFrame(columns=columns_new_row)
                     new_row.loc[0, 'Scan'] = scan_path
@@ -116,4 +123,4 @@ def long_shift_DB(patientID,path):
         plt.grid()
     plt.savefig(os.path.join(path,patientID, 'Analysis','Plots', 'Long_shift.png'))
 
-long_shift_DB('NH02001',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
+long_shift_DB('NH02002',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')

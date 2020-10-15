@@ -180,7 +180,7 @@ class Patient:
 
     def extract_VG_data(self,scan,scan_path, new_row):
         vg_output=False
-        vg_path = scan_path + r'/VolumeGenerator-V.3-CfgID-26'
+        vg_path = scan_path + r'/VolumeGenerator27_3'
         vg_new_path=scan_path + r'/VolumeGenerator19_3'
         if os.path.isdir(vg_path):
             vg_ver = 'Ver3'
@@ -238,7 +238,6 @@ class Patient:
             except:
                 print ('Unexpected error with VG for scan'+ scan)
                 new_row.loc[0, 'VG_output'] = 0
-                self.DB = pd.concat([self.DB, new_row])
                 return vg_output,new_row
 
         new_row.loc[0, 'Alert_for_clipped'] = self.check_clipped_param(scan,vg_path)
