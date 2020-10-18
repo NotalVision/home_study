@@ -58,7 +58,7 @@ class Patient:
             scans_list=[]
 
         isDownloaded = check_if_downloaded(host)
-        new_data=False
+        new_data = False
         for scan in scans_list:
             if 'TST' in scan:
                 scan_path = self.data_path + '/' + self.eye + '/Hoct/' + scan
@@ -69,7 +69,7 @@ class Patient:
                         scan_ID = f.readline()
                 except:
                     continue
-                #isDownloaded=check_if_downloaded(session_ID)
+
                 if int(session_ID[12:-1]) in isDownloaded:
                     new_row = pd.DataFrame(columns=columns_new_row)
                     new_row.loc[0, 'Scan'] = scan_path
@@ -91,6 +91,7 @@ class Patient:
                     except:
                         pass
 
+                    new_data=True
                     new_row.loc[0,'Date - Time']=date_time
                     device = scan[0:9]
                     new_row.loc[0, 'Device']=device
@@ -135,10 +136,8 @@ class Patient:
                     email_text,new_row=self.alert.check_for_alerts(self,new_row,scan_path)
                     self.email_text+=email_text
                     self.DB=pd.concat([self.DB,new_row])
-                    new_data=True
 
-        if new_data==False:
-            return "no new data"
+
         ##visulaization and saving
         ## order by date, by columns, find mean & STD, change names of columns, save to excel files
         columns = ['Patient','Date - Time','Eye','Device', 'ScanID','Session', 'Scan Ver', 'VG Ver','VG_output','checked_for_alerts',
@@ -152,9 +151,17 @@ class Patient:
         try:
             self.DB=self.DB[columns]
         except:
-            return 'no new data'
+            return self,new_data
 
-        self.DB=self.DB.sort_values(by='Date - Time')
+        self.save_one_eye_excels()
+
+
+
+
+        return self,new_data
+
+    def save_one_eye_excels(self):
+        self.DB = self.DB.sort_values(by='Date - Time')
         self.final_DB = self.DB
         self.final_DB = self.final_DB.round(2)
 
@@ -164,7 +171,6 @@ class Patient:
         self.ver3_DB = self.final_DB[col]
         self.ver3_DB.loc['Overall Mean'] = self.ver3_DB.mean()
         self.ver3_DB.loc['STD'] = self.ver3_DB.std()
-
 
         self.ver3_DB.fillna(-1, inplace=True)
         self.ver3_DB = self.ver3_DB.round(2)
@@ -176,9 +182,6 @@ class Patient:
         self.DB.fillna(-1, inplace=True)
         self.DB = self.DB.round(2)
         self.DB.to_excel(self.analysis_summary_path)
-
-
-        return self
 
     def extract_VG_data(self,scan,scan_path, new_row):
         vg_output=False
@@ -196,7 +199,7 @@ class Patient:
         else:
             vg_ver = 'Ver2.31'
             new_row.loc[0, 'VG Ver'] = vg_ver
-            vg_path = scan_path + r'/VolumeGenerator19_2.3'
+            vg_path = scan_path + r'/VolumeGenerator19_2.31'
             file_path = vg_path + r'/DB_Data/VG_scan.csv'
             if not os.path.isfile(file_path):
                 file_path = vg_path + r'/DB_Data/scan.csv'
