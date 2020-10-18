@@ -33,40 +33,26 @@ if __name__ =="__main__":
             network='nv-nas01'
             host = 'Local Host'
         data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data_testing'.format(network)
-        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
         logger=my_logger(os.path.join(data_folder,'logger'))
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
         patients = ['NH02001']#,'NH02002']
         send_email=True
+        all_patients_new_data=False
         for patientID in patients:
             total_DB=[]
+            patient_new_data=False
             patient_config_path = os.path.join(data_folder, patientID,'config.txt')
             with open(patient_config_path) as f:
                 set_tz = f.readlines()
                 set_tz=set_tz[0][10:]
             for eye in ['R','L']:
                 new_patient = Patient(data_folder, patientID,eye,logger)
-                new_patient=new_patient.full_analysis(host,logger)
-                if new_patient=='no new data':
-                    with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'r') as f:
-                        last_scan_date = f.readlines()
-                        last_scan_date=datetime.strptime(last_scan_date[0], '%Y-%m-%d')
-                        last_scan_date=last_scan_date.date()
-                        today = datetime.now(pytz.timezone("{}".format(set_tz)))
-                        if eye=='L' and (today.date()-last_scan_date).days  >= 2:
-                            yesterday = (today - timedelta(1)).date()
-                            email_text = 'No scans were received from any of the patients on {}'.format(yesterday)
-                            msg_subject = 'Attention: No incoming scans on {}'.format(yesterday)
-                            send_email_func(email_text, mailing_list, msg_subject)
-                            with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
-                                f.write(str(today.date()))
-                    continue
-                else: ##update date of last scan, to send alert if 36h passed without incoming scan
-                    with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
-                        today=datetime.now(pytz.timezone("{}".format(set_tz)))
-                        f.write(str(today.date()))
+                new_patient,new_data=new_patient.full_analysis(host,logger)
+                if new_data==True:
+                    patient_new_data=True
+
                 total_DB.append(new_patient.final_DB) ## want to create one DB for both eyes
 
 
@@ -75,8 +61,12 @@ if __name__ =="__main__":
                     msg_subject= 'Attention: Patient {}, {} ({})'.format(patientID,eye,host)
                     send_email_func(email_text,mailing_list,msg_subject)
 
+
+
             if len(total_DB)==0: ## no scans in both eyes
                 continue
+            elif len(total_DB)==1:
+                total_DB = total_DB[0] ## only left or only right
             elif len(total_DB)==2:
                 total_DB = pd.concat([total_DB[0], total_DB[1]]) ##left and right
 
@@ -103,7 +93,28 @@ if __name__ =="__main__":
             class_ditrib1(data_folder,new_patient)
             class_distrib2(data_folder,new_patient)
             #long_shift_DB(patientID,data_folder)
+            if patient_new_data==True:
+                all_patients_new_data=True
 
+
+        if all_patients_new_data==False:
+            with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'r') as f:
+                last_scan_date = f.readlines()
+                last_scan_date = datetime.strptime(last_scan_date[0], '%Y-%m-%d')
+                last_scan_date = last_scan_date.date()
+                today = datetime.now(pytz.timezone("{}".format(set_tz)))
+                if eye == 'L' and (today.date() - last_scan_date).days >= 2:
+                    yesterday = (today - timedelta(1)).date()
+                    email_text = 'No scans were received from any of the patients on {}'.format(yesterday)
+                    msg_subject = 'Attention: No incoming scans on {}'.format(yesterday)
+                    send_email_func(email_text, mailing_list, msg_subject)
+                    with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
+                        f.write(str(today.date()))
+            continue
+        else:  ##update date of last scan
+            with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
+                today = datetime.now(pytz.timezone("{}".format(set_tz)))
+                f.write(str(today.date()))
 
         print (time.asctime(time.localtime(time.time())))
         print ('elapsed_time=',time.time() - start_time)
