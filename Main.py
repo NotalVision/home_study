@@ -40,6 +40,10 @@ if __name__ =="__main__":
         send_email=True
         for patientID in patients:
             total_DB=[]
+            patient_config_path = os.path.join(data_folder, patientID,'config.txt')
+            with open(patient_config_path) as f:
+                set_tz = f.readlines()
+                set_tz=set_tz[0][10:]
             for eye in ['R','L']:
                 new_patient = Patient(data_folder, patientID,eye)
                 new_patient=new_patient.full_analysis(host)
