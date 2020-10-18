@@ -12,6 +12,7 @@ import pickle
 pd.options.mode.chained_assignment = None
 from DB_connection import check_if_downloaded
 from Patient_Utils import check_vg_status,check_if_timeout
+import logging
 
 
 
@@ -19,7 +20,7 @@ from Patient_Utils import check_vg_status,check_if_timeout
 
 
 class Patient:
-    def __init__(self,data_folder, patientID,eye):
+    def __init__(self,data_folder, patientID,eye,logger):
         self.data_path=data_folder+'/'+patientID
         self.patient_ID=patientID
         self.eye=eye
@@ -43,7 +44,7 @@ class Patient:
 
 
 
-    def full_analysis(self,host):
+    def full_analysis(self,host,logger):
         if self.new==1:
             self.DB=pd.DataFrame()
             self.ver3_DB=pd.DataFrame()
@@ -125,6 +126,7 @@ class Patient:
                         shift_x = np.nan
                         shift_y = np.nan
                         print('no OrigShiftCalcLongi for ' + scan)
+                        logging.info('no OrigShiftCalcLongi for ' + scan)
 
                     new_row.loc[0, 'x_long_shift'] = shift_x
                     new_row.loc[0, 'y_long_shift'] = shift_y
@@ -278,6 +280,7 @@ class Patient:
                 return 0
         except:
             print ('error in reading VG_Bscan '+ scan)
+            logging.info('error in reading VG_Bscan '+ scan)
             return -1
 
 

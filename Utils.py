@@ -3,6 +3,8 @@ import xlsxwriter
 import os
 import smtplib
 from email.message import EmailMessage
+import logging
+import sys
 
 def merge_eye_excels(new_patient,path,new_path):
     '''
@@ -32,7 +34,26 @@ def send_email_func(email_text,mailing_list,msg_subject):
     msg.set_content(email_text)
     msg['Subject'] = msg_subject
     msg['From'] = 'shirialm1994@gmail.com'
-    msg['To'] =  mailing_list  #'shiria@notalvision.com'#
+    msg['To'] =  'shiria@notalvision.com'#mailing_list  #
     # Send the message via our own SMTP server.
     s.send_message(msg)
     s.quit()
+
+def my_logger(logger_name, level=logging.DEBUG):
+    """
+    Method to return a custom logger with the given name and level
+    """
+    logger = logging.getLogger(logger_name)
+    logging.basicConfig(
+        filename=logger_name,
+        filemode='w',
+        format='%(asctime)s, %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG)
+    # Creating and adding the console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(console_handler)
+    # Creating and adding the file handler
+    file_handler = logging.FileHandler(logger_name, mode='a')
+    logger.addHandler(file_handler)
+    return logger
