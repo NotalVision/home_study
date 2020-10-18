@@ -32,12 +32,12 @@ if __name__ =="__main__":
         else:
             network='nv-nas01'
             host = 'Local Host'
-        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data_testing'.format(network)
+        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
         logger=my_logger(os.path.join(data_folder,'logger'))
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
-        patients = ['NH02001']#,'NH02002']
+        patients = ['NH02001','NH02002','NH02003']
         send_email=True
         all_patients_new_data=False
         for patientID in patients:
@@ -110,7 +110,7 @@ if __name__ =="__main__":
                     send_email_func(email_text, mailing_list, msg_subject)
                     with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
                         f.write(str(today.date()))
-            continue
+
         else:  ##update date of last scan
             with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
                 today = datetime.now(pytz.timezone("{}".format(set_tz)))

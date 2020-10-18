@@ -213,6 +213,8 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
         plt.grid()
     plt.savefig(save_path + '/Clipped.png')
 
+    plt.close('all')
+
 
     # longitudinal shift
     # fig = plt.figure(figsize=(20, 10))

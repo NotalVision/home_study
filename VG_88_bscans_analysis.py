@@ -81,6 +81,7 @@ def class_ditrib1(data_folder,patient):
 
         output.to_excel(save_excel_path)
     plt.savefig(save_fig_path+'/Per_Scan Class Distribution.png')
+    plt.close('all')
     merge_eye_excels(patient, '/{}_{}_ver3_class_analysis.xlsx', '{}_ver3_class_analysis.xlsx'.format(patientID))
     return
 
@@ -135,4 +136,5 @@ def class_distrib2(data_folder,patient):
             plt.title('All Bscans Class Distribution, Patient {}, {}'.format(patientID, eye))
 
     plt.savefig(save_fig_path + '/All Bscans Class Distribution.png')
+    plt.close('all')
     return

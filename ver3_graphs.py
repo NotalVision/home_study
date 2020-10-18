@@ -48,3 +48,5 @@ def ver3_create_graphs(data_folder, patient,save_path,events,with_events):
         plt.grid()
 
     plt.savefig(save_path+'/longitudinal_class_distibution.png')
+
+    plt.close('all')
