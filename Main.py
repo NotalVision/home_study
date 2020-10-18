@@ -12,7 +12,7 @@ import pandas as pd
 from VG_88_bscans_analysis import class_ditrib1,class_distrib2
 from datetime import date
 import xlsxwriter
-from Utils import merge_eye_excels,send_email_func
+from Utils import merge_eye_excels,send_email_func,my_logger
 import sys
 import pytz
 #from long_shift import long_shift_DB
@@ -33,6 +33,8 @@ if __name__ =="__main__":
             network='nv-nas01'
             host = 'Local Host'
         data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data_testing'.format(network)
+        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
+        logger=my_logger(os.path.join(data_folder,'logger'))
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
@@ -45,8 +47,8 @@ if __name__ =="__main__":
                 set_tz = f.readlines()
                 set_tz=set_tz[0][10:]
             for eye in ['R','L']:
-                new_patient = Patient(data_folder, patientID,eye)
-                new_patient=new_patient.full_analysis(host)
+                new_patient = Patient(data_folder, patientID,eye,logger)
+                new_patient=new_patient.full_analysis(host,logger)
                 if new_patient=='no new data':
                     with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'r') as f:
                         last_scan_date = f.readlines()
@@ -66,8 +68,6 @@ if __name__ =="__main__":
                         today=datetime.now(pytz.timezone("{}".format(set_tz)))
                         f.write(str(today.date()))
                 total_DB.append(new_patient.final_DB) ## want to create one DB for both eyes
-
-                ##check if 36h passed withoud incoming scan
 
 
                 if send_email and new_patient.email_text!='':

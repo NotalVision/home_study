@@ -103,7 +103,7 @@ def long_shift_DB(patientID,path):
         formatter = mdates.DateFormatter('%m-%d')
         ax.xaxis.set_major_formatter(formatter)
         ax.set_ylabel('Shift [um]')
-        plt.ylim((min(min(x_shift),min(y_shift)),max(max(x_shift),max(y_shift))))
+        #plt.ylim((min(min(x_shift),min(y_shift)),max(max(x_shift),max(y_shift))))
         ax.xaxis.set_ticks(time_axis)
         plt.xticks(rotation=45)
         plt.xticks(fontsize=8)
@@ -123,4 +123,4 @@ def long_shift_DB(patientID,path):
         plt.grid()
     plt.savefig(os.path.join(path,patientID, 'Analysis','Plots', 'Long_shift.png'))
 
-long_shift_DB('NH02002',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
+long_shift_DB('NH02003',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
