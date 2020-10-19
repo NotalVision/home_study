@@ -54,7 +54,7 @@ class Alert:
     def check_for_alerts(self,patient, new_row,scan_path):
         email_text = ''
         alerts_object=patient.alert
-        #alerts_object=alerts_object.check_if_outdated()
+        alerts_object=alerts_object.check_if_outdated()
         alerts = alerts_object.alert_dic
 
         e = patient.eye
