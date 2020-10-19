@@ -32,15 +32,15 @@ class Patient:
         self.DB_path=(self.analysis_folder+'/'+ patientID + '_DB.xlsx')
         self.ver3_DB_path=(self.analysis_folder+ '/'+ patientID + '_{}_ver3_class_data.xlsx'.format(eye))
         self.analysis_summary_path= (self.analysis_folder+ '/' + patientID+'_{}_scan_quality_&_fixation.xlsx'.format(eye))
-        self.alerts = Alert(self)
+        self.alert_template = Alert(self)
         if os.path.isfile(self.DB_path):  #create new DB only if doesn't exist yet
             self.DB=pd.read_excel(self.DB_path)
             self.DB=self.DB[self.DB['Eye']==eye]
-            self.alert=self.alerts.load_existing()
+            self.alerts=self.alert_template.load_existing()
             self.new=0
         else:
             self.new=1
-            self.alert=self.alerts.create_new()
+            self.alerts=self.alert_template.create_new()
 
 
 
@@ -132,8 +132,8 @@ class Patient:
                     new_row.loc[0, 'x_long_shift'] = shift_x
                     new_row.loc[0, 'y_long_shift'] = shift_y
                     ##~~~~~~~~~~Alerts~~~~ #####
-
-                    email_text,new_row=self.alert.check_for_alerts(self,new_row,scan_path)
+                    new_row.rename(columns={'MeanBMsiVsr': 'MSI' },inplace=True)
+                    email_text,new_row=self.alerts.check_for_alerts(self,new_row,scan_path)
                     self.email_text+=email_text
                     self.DB=pd.concat([self.DB,new_row])
 
@@ -141,7 +141,7 @@ class Patient:
         ##visulaization and saving
         ## order by date, by columns, find mean & STD, change names of columns, save to excel files
         columns = ['Patient','Date - Time','Eye','Device', 'ScanID','Session', 'Scan Ver', 'VG Ver','VG_output','checked_for_alerts',
-                   'MeanBMsiVsr','Vmsi', 'MaxBMsiVsr','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
+                   'MSI','Vmsi', 'MaxBMsiVsr','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
                    'VsrRemoveOutFOV', 'MeanGap', 'MaxGap','ClippedPrecent', 'RegCentX','RegCentY','RegRangeX','RegRangeY',
                    'RegStdX', 'RegStdY','MeanXCover', 'MeanRetinalThickness3*3', 'MeanRetinalThicknessCST',
                    'MeanRetinalThicknessNIM', 'MeanRetinalThicknessTIM', 'MeanRetinalThicknessSIM',
@@ -211,7 +211,7 @@ class Patient:
                              'RegStdX', 'RegStdY', 'MeanXCover', 'MeanRetinalThickness3*3', 'MeanRetinalThicknessCST',
                              'MeanRetinalThicknessNIM', 'MeanRetinalThicknessTIM', 'MeanRetinalThicknessSIM',
                              'MeanRetinalThicknessIIM']]
-            data.rename(columns={'NumValidReg': 'NumValidBatchReg', 'QaVsrRemoveOutFOV': 'VsrRemoveOutFOV', },
+            data.rename(columns={'NumValidReg': 'NumValidBatchReg', 'QaVsrRemoveOutFOV': 'VsrRemoveOutFOV', 'MeanBMsiVsr':'MSI'},
                            inplace=True)
             data.loc[0,'Patient'] = self.patient_ID
             new_row.loc[0, 'VG_output'] = 1
