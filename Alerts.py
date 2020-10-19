@@ -12,6 +12,7 @@ import datetime
 from datetime import date
 import time
 import copy
+import math
 
 
 class Alert:
@@ -27,21 +28,24 @@ class Alert:
                 f.writelines('Alert History for patient '+patient.patient_ID)
         self.params_path = os.path.join(self.path, 'Alerts_params.xlsx')
         self.params_dic={}
-        # if os.path.isfile(self.params_path):
-        #     a=pd.read_excel(self.params_path)
-        #     for ind,param in a.iterrows():
-        #         row=param.T
-        #         self.params[row.T[0]]=[row.T[1],row.T[2],row.T[3]]
+        if os.path.isfile(self.params_path):
+            a=pd.read_excel(self.params_path)
+            for ind,param in a.iterrows():
+                row=param.T
+                self.params_dic[row.T[0]]=[row.T[1],row.T[2],row.T[3]]
 
 
     def load_existing(self):
-        with open(self.path + '/alerts.pkl', 'rb') as f:
-            self.alert_dic=pickle.load(f)
-            return self
+        try:
+            with open(self.path + '/alerts.pkl', 'rb') as f:
+                self.alert_dic=pickle.load(f)
+                return self
+        except:
+            return self.create_new()
 
     def create_new(self):
-        alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
-        #alert_types=self.params_dic.keys()
+        #alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
+        alert_types=list(self.params_dic.keys())
         eye = ['L', 'R']
 
         partition_by_alert = dict(zip(alert_types, [dict() for i in alert_types]))
@@ -82,71 +86,79 @@ class Alert:
         #         email_text+='\n'
         #         alerts[e]['long_y_shift'] = {}
 
-        # for param in self.params_dic.keys():
-        #     if (abs(new_row[param]) <= self.params_dic[param][0]) or (abs(new_row[param]) >= self.params_dic[param][1]):
-        #         alerts[e][param][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) +
-        #                                       ', Scan ID: ' + str(
-        #                     new_row['ScanID'].values[0][:-1]) + '\n'+ param + str(
-        #                     new_row[param].values[0]) + '\n' + scan_path + '\n')
-        #         if len(alerts[e][param]) >= 2:
-        #             email_text += '{} was low in the last 2 scans:'.format(param) + '\n'
-        #             for i in alerts[e][param]:
-        #                 email_text += str(alerts[e][param][i])
-        #             email_text += '\n'
-        #             alerts[e][param] = {}
+        for param in list(alerts[e].keys()):
+            high_or_low=''
+            if math.isnan(self.params_dic[param][0]):
+                high_or_low='high'
+            else:
+                high_or_low='low'
+            if (abs(new_row[param].array) <= self.params_dic[param][0]) or (abs(new_row[param].array) >= self.params_dic[param][1]):
+                alerts[e][param][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) +
+                                              ', Scan ID: ' + str(
+                            new_row['ScanID'].values[0][:-1]) + '\n'+ param +': '+ str(
+                            new_row[param].values[0]) + '\n' + scan_path + '\n')
+                if len(alerts[e][param]) >= self.params_dic[param][2]:
+                    if self.params_dic[param][2]==1:
+                        email_text += '{} was {} in the last scan:'.format(param,high_or_low) + '\n'
+                    else:
+                        email_text += '{} was {} in the last {} scans:'.format(param,high_or_low,self.params_dic[param][2]) + '\n'
+                    for i in alerts[e][param]:
+                        email_text += str(alerts[e][param][i])
+                    email_text += '\n'
+                    alerts[e][param] = {}
 
-        if abs(new_row['# Class 1'].values[0]) <=70:
-            alerts[e]['class_1'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-                                             ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 bscans: ' + str(new_row['# Class 1'].values[0]) + '\n'+scan_path+'\n')
-            if len(alerts[e]['class_1']) >= 2:
-                email_text += '# Class 1 Bscans was low in the last 2 scans:' + '\n'
-                for i in alerts[e]['class_1']:
-                    email_text += str(alerts[e]['class_1'][i])
-                email_text+='\n'
-                alerts[e]['class_1'] = {}
-        if abs(new_row['RegStdX'].values[0]) >300:
-            alerts[e]['RegStdX'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-                                             ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_X: ' + str(new_row['RegStdX'].values[0]) + 'um \n'+scan_path+'\n')
-            if len(alerts[e]['RegStdX']) >= 2:
-                email_text += 'RegSTD in the X axis was high in 2 of the last scans:' + '\n'
-                for i in alerts[e]['RegStdX']:
-                    email_text += str(alerts[e]['RegStdX'][i])
-                email_text+='\n'
-                alerts[e]['RegStdX'] = {}
-        if abs(new_row['RegStdY'].values[0]) >300:
-            alerts[e]['RegStdY'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-                                             ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_Y: ' + str(new_row['RegStdY'].values[0]) + 'um \n'+scan_path+'\n')
-            if len(alerts[e]['RegStdY']) >= 2:
-                email_text += 'RegSTD in the Y axis was high in 2 of the last scans:' + '\n'
-                for i in alerts[e]['RegStdY']:
-                    email_text += str(alerts[e]['RegStdY'][i])
-                email_text+='\n'
-                alerts[e]['RegStdY'] = {}
-        if abs(new_row['MaxGap'].values[0]) >250:
-            alerts[e]['MaxGap'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-                                             ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nMaxGap: ' + str(new_row['MaxGap'].values[0]) + '\n'+scan_path+'\n')
-            if len(alerts[e]['MaxGap']) >= 2:
-                email_text += 'Max gap was high in 2 of the last scans:' + '\n'
-                for i in alerts[e]['MaxGap']:
-                    email_text += str(alerts[e]['MaxGap'][i])
-                email_text+='\n'
-                alerts[e]['MaxGap'] = {}
-
-        if new_row['MeanBMsiVsr'].values[0] < 2:
-            email_text += ('Low MSI detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nMSI: ' + str(new_row['MeanBMsiVsr'].values[0]) +'\n'+ scan_path+'\n'+'\n')
-        if new_row['Vmsi'].values < 2:
-            email_text += ('Low Vmsi detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nVmsi: ' + str(new_row['Vmsi'].values[0])  +'\n'+ scan_path+'\n'+'\n')
-        if new_row['NumValidLines'].values[0] <88:
-            email_text += ('Low # Bscans detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Bscans: ' + str(new_row['NumValidLines'].values[0])  +'\n'+ scan_path+'\n'+'\n')
-        if new_row['# Class 1'].values[0] <50:
-            email_text += ('# Class 1 Bscans was low in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 Bscans: ' + str(new_row['# Class 1'].values[0])  +'\n'+ scan_path+'\n'+'\n')
-        if new_row['Alert_for_clipped'].values[0] ==1:
-            email_text += ('High percentage of clipped Bscans in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
+        # if abs(new_row['# Class 1'].values[0]) <=70:
+        #     alerts[e]['class_1'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
+        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 bscans: ' + str(new_row['# Class 1'].values[0]) + '\n'+scan_path+'\n')
+        #     if len(alerts[e]['class_1']) >= 2:
+        #         email_text += '# Class 1 Bscans was low in the last 2 scans:' + '\n'
+        #         for i in alerts[e]['class_1']:
+        #             email_text += str(alerts[e]['class_1'][i])
+        #         email_text+='\n'
+        #         alerts[e]['class_1'] = {}
+        # if abs(new_row['RegStdX'].values[0]) >300:
+        #     alerts[e]['RegStdX'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
+        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_X: ' + str(new_row['RegStdX'].values[0]) + 'um \n'+scan_path+'\n')
+        #     if len(alerts[e]['RegStdX']) >= 2:
+        #         email_text += 'RegSTD in the X axis was high in 2 of the last scans:' + '\n'
+        #         for i in alerts[e]['RegStdX']:
+        #             email_text += str(alerts[e]['RegStdX'][i])
+        #         email_text+='\n'
+        #         alerts[e]['RegStdX'] = {}
+        # if abs(new_row['RegStdY'].values[0]) >300:
+        #     alerts[e]['RegStdY'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
+        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_Y: ' + str(new_row['RegStdY'].values[0]) + 'um \n'+scan_path+'\n')
+        #     if len(alerts[e]['RegStdY']) >= 2:
+        #         email_text += 'RegSTD in the Y axis was high in 2 of the last scans:' + '\n'
+        #         for i in alerts[e]['RegStdY']:
+        #             email_text += str(alerts[e]['RegStdY'][i])
+        #         email_text+='\n'
+        #         alerts[e]['RegStdY'] = {}
+        # if abs(new_row['MaxGap'].values[0]) >250:
+        #     alerts[e]['MaxGap'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
+        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nMaxGap: ' + str(new_row['MaxGap'].values[0]) + '\n'+scan_path+'\n')
+        #     if len(alerts[e]['MaxGap']) >= 2:
+        #         email_text += 'Max gap was high in 2 of the last scans:' + '\n'
+        #         for i in alerts[e]['MaxGap']:
+        #             email_text += str(alerts[e]['MaxGap'][i])
+        #         email_text+='\n'
+        #         alerts[e]['MaxGap'] = {}
+        #
+        # if new_row['MeanBMsiVsr'].values[0] < 2:
+        #     email_text += ('Low MSI detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nMSI: ' + str(new_row['MeanBMsiVsr'].values[0]) +'\n'+ scan_path+'\n'+'\n')
+        # if new_row['Vmsi'].values < 2:
+        #     email_text += ('Low Vmsi detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nVmsi: ' + str(new_row['Vmsi'].values[0])  +'\n'+ scan_path+'\n'+'\n')
+        # if new_row['NumValidLines'].values[0] <88:
+        #     email_text += ('Low # Bscans detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Bscans: ' + str(new_row['NumValidLines'].values[0])  +'\n'+ scan_path+'\n'+'\n')
+        # if new_row['# Class 1'].values[0] <50:
+        #     email_text += ('# Class 1 Bscans was low in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 Bscans: ' + str(new_row['# Class 1'].values[0])  +'\n'+ scan_path+'\n'+'\n')
+        # if new_row['Alert_for_clipped'].values[0] ==1:
+        #     email_text += ('High percentage of clipped Bscans in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
 
         with open(patient.alerts.path + '/alerts.pkl', 'wb') as f:
             pickle.dump(alerts, f, pickle.HIGHEST_PROTOCOL)
