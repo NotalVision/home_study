@@ -12,8 +12,8 @@ def check_if_downloaded(host):
 
     else:
         conn = pyodbc.connect('Driver={SQL Server};'
-                              'Server=172.30.2.117;'
-                              'Database=OCTanalysisBackupForTesting;'
+                              'Server=172.30.2.246;'
+                              'Database=OCTanalysis;'
                               'uid=shiri_almog;pwd=shiri@123')
         cursor = conn.cursor()
         cursor.execute("SELECT SessionID FROM SessionDownload WHERE ModesDownloadedMask=01 OR ModesDownloadedMask=11")

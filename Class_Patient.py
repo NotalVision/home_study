@@ -13,6 +13,7 @@ pd.options.mode.chained_assignment = None
 from DB_connection import check_if_downloaded
 from Patient_Utils import check_vg_status,check_if_timeout
 import logging
+import glob
 
 
 
@@ -109,6 +110,7 @@ class Patient:
 
                     vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
                     if vg_output == False:
+
                         email_text, new_row = self.alerts.check_for_alerts(self, new_row, scan_path)
                         self.email_text += email_text
                         self.DB = pd.concat([self.DB, new_row])
@@ -188,35 +190,52 @@ class Patient:
 
     def extract_VG_data(self,scan,scan_path, new_row):
         vg_output=False
-        if os.path.isdir(scan_path + r'/VolumeGenerator27_3.1'):
-            vg_path=scan_path + r'/VolumeGenerator27_3.1'
-            vg_ver = 'Ver3'
-            new_row.loc[0, 'VG Ver'] = vg_ver
-            file_path = scan_path + r'/VolumeGenerator27_3.1/DB_Data/VG_scan.csv'
-        elif os.path.isdir(scan_path + r'/VolumeGenerator19_3'):
-            vg_path = scan_path + r'/VolumeGenerator19_3'
-            vg_ver = 'Ver3'
-            new_row.loc[0, 'VG Ver'] = vg_ver
-            file_path = scan_path + r'/VolumeGenerator19_3/DB_Data/VG_scan.csv'
-        elif os.path.isdir(scan_path + r'/VolumeGenerator_3'):
-            vg_path = scan_path + r'/VolumeGenerator_3'
-            vg_ver = 'Ver3'
-            new_row.loc[0, 'VG Ver'] = vg_ver
-            file_path = scan_path + r'/VolumeGenerator_3/DB_Data/VG_scan.csv'
-        elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.31'):
-            vg_ver = 'Ver2.31'
-            new_row.loc[0, 'VG Ver'] = vg_ver
-            vg_path = scan_path + r'/VolumeGenerator19_2.31'
-            file_path = vg_path + r'/DB_Data/VG_scan.csv'
-            if not os.path.isfile(file_path):
-                file_path = vg_path + r'/DB_Data/scan.csv'
-        elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.3'):
-            vg_ver = 'Ver2.3'
-            new_row.loc[0, 'VG Ver'] = vg_ver
-            vg_path = scan_path + r'/VolumeGenerator19_2.3'
-            file_path = vg_path + r'/DB_Data/VG_scan.csv'
-            if not os.path.isfile(file_path):
-                file_path = vg_path + r'/DB_Data/scan.csv'
+        for name in glob.glob(scan_path + r'/VolumeGenerator*'):
+            if os.path.isfile(name+r'/Data/Data.mat'):
+                continue
+            else:
+                vg_path = name
+                vg_loc = str.find(name,'VolumeGenerator')
+                vg_ver=name[vg_loc+15:-1]
+                new_row.loc[0, 'VG Ver'] = vg_ver
+                file_path = name+r'/DB_Data/VG_scan.csv'
+                if not os.path.isfile(file_path):
+                     file_path = name + r'/DB_Data/scan.csv'
+
+        # if os.path.isdir(scan_path + r'/VolumeGenerator27_3.1'):
+        #     vg_path=scan_path + r'/VolumeGenerator27_3.1'
+        #     vg_ver = 'Ver3'
+        #     new_row.loc[0, 'VG Ver'] = vg_ver
+        #     file_path = scan_path + r'/VolumeGenerator27_3.1/DB_Data/VG_scan.csv'
+        # elif os.path.isdir(scan_path + r'/VolumeGenerator27_3'):
+        #     vg_path = scan_path + r'/VolumeGenerator27_3'
+        #     vg_ver = 'Ver3'
+        #     new_row.loc[0, 'VG Ver'] = vg_ver
+        #     file_path = scan_path + r'/VolumeGenerator27_3/DB_Data/VG_scan.csv'
+        # elif os.path.isdir(scan_path + r'/VolumeGenerator19_3'):
+        #     vg_path = scan_path + r'/VolumeGenerator19_3'
+        #     vg_ver = 'Ver3'
+        #     new_row.loc[0, 'VG Ver'] = vg_ver
+        #     file_path = scan_path + r'/VolumeGenerator19_3/DB_Data/VG_scan.csv'
+        # elif os.path.isdir(scan_path + r'/VolumeGenerator_3'):
+        #     vg_path = scan_path + r'/VolumeGenerator_3'
+        #     vg_ver = 'Ver3'
+        #     new_row.loc[0, 'VG Ver'] = vg_ver
+        #     file_path = scan_path + r'/VolumeGenerator_3/DB_Data/VG_scan.csv'
+        # elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.31'):
+        #     vg_ver = 'Ver2.31'
+        #     new_row.loc[0, 'VG Ver'] = vg_ver
+        #     vg_path = scan_path + r'/VolumeGenerator19_2.31'
+        #     file_path = vg_path + r'/DB_Data/VG_scan.csv'
+        #     if not os.path.isfile(file_path):
+        #         file_path = vg_path + r'/DB_Data/scan.csv'
+        # elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.3'):
+        #     vg_ver = 'Ver2.3'
+        #     new_row.loc[0, 'VG Ver'] = vg_ver
+        #     vg_path = scan_path + r'/VolumeGenerator19_2.3'
+        #     file_path = vg_path + r'/DB_Data/VG_scan.csv'
+        #     if not os.path.isfile(file_path):
+        #         file_path = vg_path + r'/DB_Data/scan.csv'
         try:
             curr_csv = pd.read_csv(file_path)
             data = curr_csv[['MeanBMsiVsr', 'Vmsi', 'MaxBMsiVsr', 'AdjustmentTime', 'RasterTime', 'TotalScanTime',

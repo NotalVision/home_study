@@ -34,7 +34,7 @@ def send_email_func(email_text,mailing_list,msg_subject):
     msg.set_content(email_text)
     msg['Subject'] = msg_subject
     msg['From'] = 'shirialm1994@gmail.com'
-    msg['To'] =  mailing_list  #'shiria@notalvision.com'#
+    msg['To'] =  'shiria@notalvision.com'#mailing_list  #
     # Send the message via our own SMTP server.
     s.send_message(msg)
     s.quit()

@@ -63,7 +63,7 @@ class Alert:
 
         e = patient.eye
         date = new_row['Date - Time'].values[0]
-        if new_row['VG_output'].values[0] ==0:
+        if new_row['VG_output'].values[0] ==0 or new_row['VG_output'].values[0] ==2:
             email_text += ('No VG output in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
                            +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
             return email_text, new_row
