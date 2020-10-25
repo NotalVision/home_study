@@ -109,6 +109,8 @@ class Patient:
 
                     vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
                     if vg_output == False:
+                        email_text, new_row = self.alerts.check_for_alerts(self, new_row, scan_path)
+                        self.email_text += email_text
                         self.DB = pd.concat([self.DB, new_row])
                         continue
 
@@ -142,7 +144,8 @@ class Patient:
         ## order by date, by columns, find mean & STD, change names of columns, save to excel files
         columns = ['Patient','Date - Time','Eye','Device', 'ScanID','Session', 'Scan Ver', 'VG Ver','VG_output','checked_for_alerts',
                    'MSI','Vmsi', 'MaxBMsiVsr','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
-                   'VsrRemoveOutFOV', 'MeanGap', 'MaxGap','ClippedPrecent', 'RegCentX','RegCentY','RegRangeX','RegRangeY',
+                   'VsrRemoveOutFOV', 'MeanGap', 'MaxGap','ClippedPrecent', '# of bscans clipped>0','# of bscans clipped>5',
+                    'RegCentX','RegCentY','RegRangeX','RegRangeY',
                    'RegStdX', 'RegStdY','MeanXCover', 'MeanRetinalThickness3*3', 'MeanRetinalThicknessCST',
                    'MeanRetinalThicknessNIM', 'MeanRetinalThicknessTIM', 'MeanRetinalThicknessSIM',
                    'MeanRetinalThicknessIIM','x_long_shift','y_long_shift','Compliance','TimeOut','Alert_for_clipped','88+ Class 1',
@@ -167,7 +170,7 @@ class Patient:
 
         col = ['Patient', 'Date - Time', 'Eye', 'Scan Ver', 'VG Ver', 'VG_output', 'TimeOut', '88+ Class 1',
                'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
-               '% Class 3']
+               '% Class 3','# of bscans clipped>0','# of bscans clipped>5']
         self.ver3_DB = self.final_DB[col]
         self.ver3_DB.loc['Overall Mean'] = self.ver3_DB.mean()
         self.ver3_DB.loc['STD'] = self.ver3_DB.std()
@@ -185,21 +188,32 @@ class Patient:
 
     def extract_VG_data(self,scan,scan_path, new_row):
         vg_output=False
-        vg_path = scan_path + r'/VolumeGenerator27_3'
-        vg_new_path=scan_path + r'/VolumeGenerator19_3'
-        if os.path.isdir(vg_path):
+        if os.path.isdir(scan_path + r'/VolumeGenerator27_3.1'):
+            vg_path=scan_path + r'/VolumeGenerator27_3.1'
             vg_ver = 'Ver3'
             new_row.loc[0, 'VG Ver'] = vg_ver
-            file_path = vg_path + r'/DB_Data/VG_scan.csv'
-        elif os.path.isdir(vg_new_path):
+            file_path = scan_path + r'/VolumeGenerator27_3.1/DB_Data/VG_scan.csv'
+        elif os.path.isdir(scan_path + r'/VolumeGenerator19_3'):
+            vg_path = scan_path + r'/VolumeGenerator19_3'
             vg_ver = 'Ver3'
             new_row.loc[0, 'VG Ver'] = vg_ver
-            file_path = vg_new_path + r'/DB_Data/VG_scan.csv'
-            vg_path=vg_new_path
-        else:
+            file_path = scan_path + r'/VolumeGenerator19_3/DB_Data/VG_scan.csv'
+        elif os.path.isdir(scan_path + r'/VolumeGenerator_3'):
+            vg_path = scan_path + r'/VolumeGenerator_3'
+            vg_ver = 'Ver3'
+            new_row.loc[0, 'VG Ver'] = vg_ver
+            file_path = scan_path + r'/VolumeGenerator_3/DB_Data/VG_scan.csv'
+        elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.31'):
             vg_ver = 'Ver2.31'
             new_row.loc[0, 'VG Ver'] = vg_ver
             vg_path = scan_path + r'/VolumeGenerator19_2.31'
+            file_path = vg_path + r'/DB_Data/VG_scan.csv'
+            if not os.path.isfile(file_path):
+                file_path = vg_path + r'/DB_Data/scan.csv'
+        elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.3'):
+            vg_ver = 'Ver2.3'
+            new_row.loc[0, 'VG Ver'] = vg_ver
+            vg_path = scan_path + r'/VolumeGenerator19_2.3'
             file_path = vg_path + r'/DB_Data/VG_scan.csv'
             if not os.path.isfile(file_path):
                 file_path = vg_path + r'/DB_Data/scan.csv'
@@ -207,7 +221,8 @@ class Patient:
             curr_csv = pd.read_csv(file_path)
             data = curr_csv[['MeanBMsiVsr', 'Vmsi', 'MaxBMsiVsr', 'AdjustmentTime', 'RasterTime', 'TotalScanTime',
                              'NumValidLines', 'NumValidReg',
-                             'QaVsrRemoveOutFOV', 'MeanGap', 'MaxGap', 'ClippedPrecent','RegCentX', 'RegCentY', 'RegRangeX', 'RegRangeY',
+                             'QaVsrRemoveOutFOV', 'MeanGap', 'MaxGap', 'ClippedPrecent',
+                             'RegCentX', 'RegCentY', 'RegRangeX', 'RegRangeY',
                              'RegStdX', 'RegStdY', 'MeanXCover', 'MeanRetinalThickness3*3', 'MeanRetinalThicknessCST',
                              'MeanRetinalThicknessNIM', 'MeanRetinalThicknessTIM', 'MeanRetinalThicknessSIM',
                              'MeanRetinalThicknessIIM']]
@@ -245,7 +260,10 @@ class Patient:
                 new_row.loc[0, 'VG_output'] = 0
                 return vg_output,new_row
 
-        new_row.loc[0, 'Alert_for_clipped'] = self.check_clipped_param(scan,vg_path)
+        alert_for_clipped,num_clipped_above_0,num_clipped_above_5=self.check_clipped_param(scan,vg_path)
+        new_row.loc[0, 'Alert_for_clipped'] = alert_for_clipped
+        new_row.loc[0, '# of bscans clipped>0'] = num_clipped_above_0
+        new_row.loc[0, '# of bscans clipped>5'] = num_clipped_above_5
         ## if no VG output, concat current row and move to next scan
         new_row = new_row.merge(data, left_on='Patient', right_on='Patient', copy=False)
 
@@ -269,8 +287,11 @@ class Patient:
             print('No VG_Bscan file for scan ' + scan)
             return -1
         try:
-            clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPrecent', 'IsClipped']]
+            clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPercent', 'IsClipped']]
+            num_clipped_above_0=len(clipped_data[clipped_data['ClippedPercent']>0])
+            num_clipped_above_5 = len(clipped_data[clipped_data['ClippedPercent'] > 5])
             high_clipped_per=clipped_data[clipped_data['ClippedPercent']>5]
+
             batch_list=high_clipped_per['BatchIndex'].values
             for ind,val in enumerate(batch_list,0): ##from sub batch to batch
                 if val%2==1:
@@ -278,13 +299,13 @@ class Patient:
                 batch_list[ind]=batch_list[ind]/2
             batch_set=set(batch_list) ##get unique
             if len(batch_set)>=2 and len(batch_list)>=10:
-                return 1
+                return 1,num_clipped_above_0,num_clipped_above_5
             else:
-                return 0
+                return 0,num_clipped_above_0,num_clipped_above_5
         except:
             print ('error in reading VG_Bscan '+ scan)
             logging.info('error in reading VG_Bscan '+ scan)
-            return -1
+            return -1,-1,-1
 
 
 def analysis_88(new_row_ver3,data):

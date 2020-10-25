@@ -44,7 +44,7 @@ def compliance(data_folder, patient,save_path,events):
 
 
         success_table = full_table[full_table['VG_output'] != 0]  # only succesful scans
-        no_vg_output = full_table[full_table['VG_output'] == (0 or 2)]
+        no_vg_output = full_table[full_table['VG_output'] == 0]
         no_88_table=ver3_table[ver3_table['Full Scan(88)']==0]
         timeout_table = ver3_table[ver3_table['TimeOut'] == 1]
 

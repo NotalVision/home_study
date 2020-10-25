@@ -57,45 +57,25 @@ class Alert:
 
     def check_for_alerts(self,patient, new_row,scan_path):
         email_text = ''
-        alerts_object=patient.alert
-        alerts_object=alerts_object.check_if_outdated()
+        alerts_object=patient.alerts
+        #alerts_object=alerts_object.check_if_outdated()
         alerts = alerts_object.alert_dic
 
         e = patient.eye
-        # DB_long=pd.read_excel(os.path.join(patient.data_path,'Analysis','long_shift_DB.xlsx'),sheet_name=e)
-        # x_long_shift=DB_long.loc['Date - Time','x_long_shift']
-        # y_long_shift = DB_long.loc['Date - Time', 'y_long_shift']
         date = new_row['Date - Time'].values[0]
-        # if abs(new_row['x_long_shift'].values[0]) >= 300:
-        # if abs(x_long_shift) >= 300:
-        #     alerts[e]['long_x_shift'][date]=('Scan Date: '+str(new_row['Date - Time'].values[0]) + ', Scan ID: '
-        #                                      +str(new_row['ScanID'].values[0][:-1])+ '\nShift: ' +str(new_row['x_long_shift'].values[0]) + '\n'+scan_path+'\n')
-        #     if len(alerts[e]['long_x_shift']) >= 2:
-        #         email_text += 'Large longitudinal shift detected in x axis in the two of the last scans:' + '\n'
-        #         for i in alerts[e]['long_x_shift']:
-        #             email_text += str(alerts[e]['long_x_shift'][i])
-        #         email_text += '\n'
-        #         alerts[e]['long_x_shift'] = {}
-        # if abs(y_long_shift) >= 300:
-        #     alerts[e]['long_y_shift'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nShift: ' + str(new_row['y_long_shift'].values[0]) + '\n'+scan_path+'\n')
-        #     if len(alerts[e]['long_y_shift']) >= 2:
-        #         email_text += 'Large longitudinal shift detected in y axis in the last two scans:' + '\n'
-        #         for i in alerts[e]['long_y_shift']:
-        #             email_text += str(alerts[e]['long_y_shift'][i])
-        #         email_text+='\n'
-        #         alerts[e]['long_y_shift'] = {}
+        if new_row['VG_output'].values[0] ==0:
+            email_text += ('No VG output in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
+            return email_text, new_row
+
 
         for param in list(alerts[e].keys()):
-            high_or_low=''
             if math.isnan(self.params_dic[param][0]):
                 high_or_low='high'
             else:
                 high_or_low='low'
-            if (abs(new_row[param].array) <= self.params_dic[param][0]) or (abs(new_row[param].array) >= self.params_dic[param][1]):
-                alerts[e][param][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) +
-                                              ', Scan ID: ' + str(
-                            new_row['ScanID'].values[0][:-1]) + '\n'+ param +': '+ str(
+            if (abs(new_row[param].values[0]) < self.params_dic[param][0]) or (abs(new_row[param].values[0]) > self.params_dic[param][1]):
+                alerts[e][param][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n'+ param +': '+ str(
                             new_row[param].values[0]) + '\n' + scan_path + '\n')
                 if len(alerts[e][param]) >= self.params_dic[param][2]:
                     if self.params_dic[param][2]==1:
@@ -156,9 +136,15 @@ class Alert:
         # if new_row['# Class 1'].values[0] <50:
         #     email_text += ('# Class 1 Bscans was low in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
         #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 Bscans: ' + str(new_row['# Class 1'].values[0])  +'\n'+ scan_path+'\n'+'\n')
-        # if new_row['Alert_for_clipped'].values[0] ==1:
-        #     email_text += ('High percentage of clipped Bscans in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
+        if new_row['Alert_for_clipped'].values[0] ==1:
+            email_text += ('High percentage of clipped Bscans in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
+
+        if new_row['TimeOut'].values[0] ==1:
+            email_text += ('Timeout reported in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
+                           +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
+
+
 
         with open(patient.alerts.path + '/alerts.pkl', 'wb') as f:
             pickle.dump(alerts, f, pickle.HIGHEST_PROTOCOL)
@@ -177,7 +163,7 @@ class Alert:
         eyes = ['L', 'R']
         to_remove=[]
         for eye in eyes:
-            for type in alert_types:
+            for param in list(self.alerts[e].keys()):
                 for item in self.alert_dic[eye][type]:
                     tmp_item=datetime.datetime.strptime(item,'%Y-%m-%d-%H-%M-%S')
                     tmp_item=tmp_item.date()
