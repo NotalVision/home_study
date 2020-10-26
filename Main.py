@@ -68,10 +68,12 @@ if __name__ =="__main__":
                 total_DB = pd.concat([total_DB[0], total_DB[1]]) ##left and right
 
             total_DB = total_DB.sort_values(by='Date - Time')
+
             try:
+                total_DB.to_excel(os.path.join(data_folder, 'DB', '{}_DB.xlsx'.format(new_patient.patient_ID)))
                 total_DB.to_excel(new_patient.DB_path) ## in case this is open by another user
             except:
-                total_DB.to_excel(new_patient.analysis_folder+'/DB/'+ patientID + '_DB_tmp.xlsx')
+                print ('Could not save display DB- open by another user ')
 
             ## merge
             merge_eye_excels(new_patient, '/{}_{}_ver3_class_data.xlsx', '{}_ver3_class_data.xlsx'.format(patientID))

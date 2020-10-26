@@ -14,6 +14,7 @@ from DB_connection import check_if_downloaded
 from Patient_Utils import check_vg_status,check_if_timeout
 import logging
 import glob
+from stat import S_ISREG, ST_CTIME, ST_MODE
 
 
 
@@ -30,7 +31,7 @@ class Patient:
         self.analysis_folder=(data_folder +'/'+ patientID + '/Analysis')
         if not os.path.isdir(self.analysis_folder):
             os.mkdir(self.analysis_folder)
-        self.DB_path=(self.analysis_folder+'/'+ patientID + '_DB.xlsx')
+        self.DB_path=os.path.join(self.analysis_folder,'{}_DB.xlsx'.format(self.patient_ID))
         self.ver3_DB_path=(self.analysis_folder+ '/'+ patientID + '_{}_ver3_class_data.xlsx'.format(eye))
         self.analysis_summary_path= (self.analysis_folder+ '/' + patientID+'_{}_scan_quality_&_fixation.xlsx'.format(eye))
         self.alert_template = Alert(self)
@@ -160,9 +161,6 @@ class Patient:
 
         self.save_one_eye_excels()
 
-
-
-
         return self,new_data
 
     def save_one_eye_excels(self):
@@ -190,52 +188,28 @@ class Patient:
 
     def extract_VG_data(self,scan,scan_path, new_row):
         vg_output=False
+        earliest_date=100000000000
+        vg_folder='Not Found'
         for name in glob.glob(scan_path + r'/VolumeGenerator*'):
-            if os.path.isfile(name+r'/Data/Data.mat'):
-                continue
-            else:
-                vg_path = name
-                vg_loc = str.find(name,'VolumeGenerator')
-                vg_ver=name[vg_loc+15:-1]
-                new_row.loc[0, 'VG Ver'] = vg_ver
-                file_path = name+r'/DB_Data/VG_scan.csv'
-                if not os.path.isfile(file_path):
-                     file_path = name + r'/DB_Data/scan.csv'
+            stat=os.stat(name)
+            date=stat[ST_CTIME]
+            if date<earliest_date:
+                earliest_date=date
+                vg_folder=name
 
-        # if os.path.isdir(scan_path + r'/VolumeGenerator27_3.1'):
-        #     vg_path=scan_path + r'/VolumeGenerator27_3.1'
-        #     vg_ver = 'Ver3'
-        #     new_row.loc[0, 'VG Ver'] = vg_ver
-        #     file_path = scan_path + r'/VolumeGenerator27_3.1/DB_Data/VG_scan.csv'
-        # elif os.path.isdir(scan_path + r'/VolumeGenerator27_3'):
-        #     vg_path = scan_path + r'/VolumeGenerator27_3'
-        #     vg_ver = 'Ver3'
-        #     new_row.loc[0, 'VG Ver'] = vg_ver
-        #     file_path = scan_path + r'/VolumeGenerator27_3/DB_Data/VG_scan.csv'
-        # elif os.path.isdir(scan_path + r'/VolumeGenerator19_3'):
-        #     vg_path = scan_path + r'/VolumeGenerator19_3'
-        #     vg_ver = 'Ver3'
-        #     new_row.loc[0, 'VG Ver'] = vg_ver
-        #     file_path = scan_path + r'/VolumeGenerator19_3/DB_Data/VG_scan.csv'
-        # elif os.path.isdir(scan_path + r'/VolumeGenerator_3'):
-        #     vg_path = scan_path + r'/VolumeGenerator_3'
-        #     vg_ver = 'Ver3'
-        #     new_row.loc[0, 'VG Ver'] = vg_ver
-        #     file_path = scan_path + r'/VolumeGenerator_3/DB_Data/VG_scan.csv'
-        # elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.31'):
-        #     vg_ver = 'Ver2.31'
-        #     new_row.loc[0, 'VG Ver'] = vg_ver
-        #     vg_path = scan_path + r'/VolumeGenerator19_2.31'
-        #     file_path = vg_path + r'/DB_Data/VG_scan.csv'
-        #     if not os.path.isfile(file_path):
-        #         file_path = vg_path + r'/DB_Data/scan.csv'
-        # elif os.path.isdir(scan_path+r'/VolumeGenerator19_2.3'):
-        #     vg_ver = 'Ver2.3'
-        #     new_row.loc[0, 'VG Ver'] = vg_ver
-        #     vg_path = scan_path + r'/VolumeGenerator19_2.3'
-        #     file_path = vg_path + r'/DB_Data/VG_scan.csv'
-        #     if not os.path.isfile(file_path):
-        #         file_path = vg_path + r'/DB_Data/scan.csv'
+        if vg_folder=='Not Found':
+            new_row.loc[0, 'VG_output'] = 0
+            return vg_output,new_row
+        else:
+            vg_path = vg_folder
+            vg_loc = str.find(vg_folder,'VolumeGenerator')
+            vg_ver=vg_folder[vg_loc+15:]
+            new_row.loc[0, 'VG Ver'] = vg_ver
+            file_path = vg_folder+r'/DB_Data/VG_scan.csv'
+            if not os.path.isfile(file_path):
+                file_path = vg_folder + r'/DB_Data/scan.csv'
+
+
         try:
             curr_csv = pd.read_csv(file_path)
             data = curr_csv[['MeanBMsiVsr', 'Vmsi', 'MaxBMsiVsr', 'AdjustmentTime', 'RasterTime', 'TotalScanTime',
@@ -279,7 +253,7 @@ class Patient:
                 new_row.loc[0, 'VG_output'] = 0
                 return vg_output,new_row
 
-        alert_for_clipped,num_clipped_above_0,num_clipped_above_5=self.check_clipped_param(scan,vg_path)
+        alert_for_clipped,num_clipped_above_0,num_clipped_above_5=self.check_clipped_param(scan,scan_path,vg_path)
         new_row.loc[0, 'Alert_for_clipped'] = alert_for_clipped
         new_row.loc[0, '# of bscans clipped>0'] = num_clipped_above_0
         new_row.loc[0, '# of bscans clipped>5'] = num_clipped_above_5
@@ -293,12 +267,18 @@ class Patient:
             new_row = analysis_88(new_row, data)
 
         except:
-            print('No VG_Bscan_VSR.csv file for ' + file_path)
+            try:
+                VG_Bscan_VSR = scan_path + r'/VolumeGenerator_3/DB_Data/VG_Bscan_VSR.csv'
+                curr_csv = pd.read_csv(VG_Bscan_VSR)
+                data = curr_csv['ClassType']
+                new_row = analysis_88(new_row, data)
+            except:
+                print('No VG_Bscan_VSR.csv file for ' + file_path)
 
         #self.DB = pd.concat([self.DB, new_row])
         return vg_output,new_row
 
-    def check_clipped_param(self,scan, vg_path):
+    def check_clipped_param(self,scan, scan_path,vg_path):
         clipped_path = vg_path + r'/DB_Data/VG_Bscan.csv'
         try:
             VG_Bscan = pd.read_csv(clipped_path)
@@ -306,25 +286,35 @@ class Patient:
             print('No VG_Bscan file for scan ' + scan)
             return -1
         try:
-            clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPercent', 'IsClipped']]
-            num_clipped_above_0=len(clipped_data[clipped_data['ClippedPercent']>0])
-            num_clipped_above_5 = len(clipped_data[clipped_data['ClippedPercent'] > 5])
-            high_clipped_per=clipped_data[clipped_data['ClippedPercent']>5]
+            clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPercent', 'IsClipped','InVs']]
+            clipped_data=clipped_data[clipped_data['InVs']==1]
 
-            batch_list=high_clipped_per['BatchIndex'].values
-            for ind,val in enumerate(batch_list,0): ##from sub batch to batch
-                if val%2==1:
-                    batch_list[ind]+=1
-                batch_list[ind]=batch_list[ind]/2
-            batch_set=set(batch_list) ##get unique
-            if len(batch_set)>=2 and len(batch_list)>=10:
-                return 1,num_clipped_above_0,num_clipped_above_5
-            else:
-                return 0,num_clipped_above_0,num_clipped_above_5
         except:
-            print ('error in reading VG_Bscan '+ scan)
-            logging.info('error in reading VG_Bscan '+ scan)
-            return -1,-1,-1
+            try:
+                clipped_path = scan_path + r'/VolumeGenerator_3/DB_Data/VG_Bscan.csv'
+                VG_Bscan = pd.read_csv(clipped_path)
+                clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPercent', 'IsClipped','InVs']]
+                clipped_data = clipped_data[clipped_data['InVs'] == 1]
+            except:
+                print('error in reading VG_Bscan ' + scan)
+                logging.info('error in reading VG_Bscan ' + scan)
+                return -1, -1, -1
+        num_clipped_above_0=len(clipped_data[clipped_data['ClippedPercent']>0])
+        num_clipped_above_5 = len(clipped_data[clipped_data['ClippedPercent'] > 5])
+        high_clipped_per=clipped_data[clipped_data['ClippedPercent']>5]
+
+        batch_list=high_clipped_per['BatchIndex'].values
+        for ind,val in enumerate(batch_list,0): ##from sub batch to batch
+            if val%2==1:
+                batch_list[ind]+=1
+            batch_list[ind]=batch_list[ind]/2
+        batch_set=set(batch_list) ##get unique
+        if len(batch_set)>=2 and len(batch_list)>=10:
+            return 1,num_clipped_above_0,num_clipped_above_5
+        else:
+            return 0,num_clipped_above_0,num_clipped_above_5
+
+
 
 
 def analysis_88(new_row_ver3,data):
