@@ -32,7 +32,11 @@ class Alert:
             a=pd.read_excel(self.params_path)
             for ind,param in a.iterrows():
                 row=param.T
-                self.params_dic[row.T[0]]=[row.T[1],row.T[2],row.T[3]]
+                if row.T[0] in self.params_dic.keys():
+                    count=len(self.params_dic[row.T[0]])
+                    self.params_dic[row.T[0]].update({count: [row.T[2], row.T[3], row.T[4]]})
+                else:
+                    self.params_dic[row.T[0]]= {0:[row.T[2],row.T[3],row.T[4]]}
 
 
     def load_existing(self):
@@ -46,9 +50,15 @@ class Alert:
     def create_new(self):
         #alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
         alert_types=list(self.params_dic.keys())
+
+
         eye = ['L', 'R']
 
         partition_by_alert = dict(zip(alert_types, [dict() for i in alert_types]))
+        for alert in alert_types:
+            for i in range(len(self.params_dic[alert])):
+                partition_by_alert[alert][i]=dict()
+
         self.alert_dic = dict(zip(eye, [copy.deepcopy(partition_by_alert) for i in eye]))
         with open(self.path + '/alerts.pkl', 'wb') as f:
             pickle.dump(self.alert_dic, f, pickle.HIGHEST_PROTOCOL)
@@ -70,22 +80,23 @@ class Alert:
 
 
         for param in list(alerts[e].keys()):
-            if math.isnan(self.params_dic[param][0]):
-                high_or_low='high'
-            else:
-                high_or_low='low'
-            if (abs(new_row[param].values[0]) < self.params_dic[param][0]) or (abs(new_row[param].values[0]) > self.params_dic[param][1]):
-                alerts[e][param][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n'+ param +': '+ str(
-                            new_row[param].values[0]) + '\n' + scan_path + '\n')
-                if len(alerts[e][param]) >= self.params_dic[param][2]:
-                    if self.params_dic[param][2]==1:
-                        email_text += '{} was {} in the last scan:'.format(param,high_or_low) + '\n'
-                    else:
-                        email_text += '{} was {} in the last {} scans:'.format(param,high_or_low,self.params_dic[param][2]) + '\n'
-                    for i in alerts[e][param]:
-                        email_text += str(alerts[e][param][i])
-                    email_text += '\n'
-                    alerts[e][param] = {}
+            for param_sec in list(alerts[e][param].keys()):
+                if math.isnan(self.params_dic[param][param_sec][0]):
+                    high_or_low='high'
+                else:
+                    high_or_low='low'
+                if (abs(new_row[param].values[0]) < self.params_dic[param][param_sec][0]) or (abs(new_row[param].values[0]) > self.params_dic[param][param_sec][1]):
+                    alerts[e][param][param_sec][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n'+ param +': '+ str(
+                                new_row[param].values[0]) + '\n' + scan_path + '\n')
+                    if len(alerts[e][param][param_sec]) >= self.params_dic[param][param_sec][2]:
+                        if self.params_dic[param][param_sec][2]==1:
+                            email_text += '{} was {} in the last scan:'.format(param,high_or_low) + '\n'
+                        else:
+                            email_text += '{} was {} in the last {} scans:'.format(param,high_or_low,self.params_dic[param][param_sec][2]) + '\n'
+                        for i in alerts[e][param][param_sec]:
+                            email_text += str(alerts[e][param][param_sec][i])
+                        email_text += '\n'
+                        alerts[e][param][param_sec] = {}
 
         # if abs(new_row['# Class 1'].values[0]) <=70:
         #     alerts[e]['class_1'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +

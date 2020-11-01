@@ -160,7 +160,7 @@ def analysis_graphs(data_folder, patient,save_path,events,with_events):
         formatter = mdates.DateFormatter('%m-%d')
         ax.xaxis.set_major_formatter(formatter)
         ax.set_ylabel('RegStdX/RegStdY [um]')
-        plt.ylim((0,350))
+        plt.ylim((0,max(350,max(RegStdY),max(RegStdX))))
         ax.xaxis.set_ticks(time_axis)
         plt.xticks(fontsize=8)
         plt.xticks(rotation=45)

@@ -34,7 +34,7 @@ if __name__ =="__main__":
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
-        patients = ['NH02001','NH02002','NH02003'] #
+        patients = ['NH02003']#,'NH02002','NH02003'] #
         send_email=True
         all_patients_new_data=False
         for patientID in patients:
@@ -106,7 +106,8 @@ if __name__ =="__main__":
                     yesterday = (today - timedelta(1)).date()
                     email_text = 'No scans were received from any of the patients on {}'.format(yesterday)
                     msg_subject = 'Attention: No incoming scans on {}'.format(yesterday)
-                    send_email_func(email_text, mailing_list, msg_subject)
+                    if host=='Local Host':
+                        send_email_func(email_text, mailing_list, msg_subject)
                     with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
                         f.write(str(today.date()))
 
