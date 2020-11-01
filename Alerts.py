@@ -97,6 +97,7 @@ class Alert:
                             email_text += str(alerts[e][param][param_sec][i])
                         email_text += '\n'
                         alerts[e][param][param_sec] = {}
+                    continue
 
         # if abs(new_row['# Class 1'].values[0]) <=70:
         #     alerts[e]['class_1'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +

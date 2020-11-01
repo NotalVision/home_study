@@ -13,7 +13,7 @@ def check_if_downloaded(host):
     else:
         conn = pyodbc.connect('Driver={SQL Server};'
                               'Server=172.30.2.177;'
-                              'Database=OCTanalysis;'
+                              'Database=OCTanalysisBackupForTesting;'
                               'uid=shiri_almog;pwd=shiri@123')
         #BackupForTesting
         cursor = conn.cursor()

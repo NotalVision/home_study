@@ -27,7 +27,7 @@ if __name__ =="__main__":
             network='V-S-G-RNDSTORE'
             host='Cloud'
         else:
-            network='172.17.102.175'#'nv-nas01'
+            network='nv-nas01'
             host = 'Local Host'
         data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
         logger=my_logger(os.path.join(data_folder,'logger'))
