@@ -34,7 +34,7 @@ if __name__ =="__main__":
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
-        patients = ['NH02001','NH02002','NH02003'] #
+        patients = ['NH01002']#,'NH02002','NH02003'] #
         send_email=True
         all_patients_new_data=False
         for patientID in patients:
