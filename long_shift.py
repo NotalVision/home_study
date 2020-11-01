@@ -54,7 +54,7 @@ def long_shift_DB(patientID,path):
 
                     long_path = scan_path + r'\Longitudinal_ver3\VG\Data\OrigShiftCalcLongi.mat'
                     if not os.path.isfile(long_path):
-                        long_path = scan_path + r'\Longitud nal_2\VG\Data\OrigShiftCalcLongi.mat'
+                        long_path = scan_path + r'\Longitudinal_2\VG\Data\OrigShiftCalcLongi.mat'
                     if not os.path.isfile(long_path):
                         long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
 
@@ -123,4 +123,4 @@ def long_shift_DB(patientID,path):
         plt.grid()
     plt.savefig(os.path.join(path,patientID, 'Analysis','Plots', 'Long_shift.png'))
 
-long_shift_DB('NH02003',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
+long_shift_DB('NH01001',r'\\172.17.102.175\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
