@@ -196,7 +196,7 @@ class Patient:
             if date<earliest_date:
                 earliest_date=date
                 vg_folder=name
-
+        #vg_folder=scan_path+'/VolumeGenerator_4'
         if vg_folder=='Not Found':
             new_row.loc[0, 'VG_output'] = 0
             return vg_output,new_row

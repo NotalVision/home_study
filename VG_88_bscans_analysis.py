@@ -14,7 +14,7 @@ def class_ditrib1(data_folder,patient):
                                                 '{}_ver3_class_data.xlsx'.format(patientID)),sheet_name=eye)  # read excel file
         save_excel_path = (vg_88_path + '/{}_{}_ver3_class_analysis.xlsx'.format(patientID, eye))
         class_table=class_table[:-2]
-        class_table=class_table[class_table['Full Scan(88)']>0]
+        #lass_table=class_table[class_table['Full Scan(88)']>0]
         class1 = class_table['# Class 1'].array
         class1=[val for val in class1 if val > 0]
         class_1_num = len(class1)
