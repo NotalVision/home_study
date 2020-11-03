@@ -7,7 +7,7 @@ import scipy.io as sio
 from email.message import EmailMessage
 import smtplib
 import csv
-from Alerts import Alert
+from Alerts_DB import Alert
 import pickle
 
 def check_if_timeout(scan_path):
