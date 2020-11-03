@@ -15,7 +15,7 @@ def long_shift_DB(patientID,path):
         network = 'V-S-G-RNDSTORE'
         host = 'Cloud'
     else:
-        network = 'nv-nas01'
+        network = '172.17.102.175'#'nv-nas01'
         host = 'Local Host'
     columns_new_row=['Patient','Scan','Date - Time','Eye','x_long_shift','y_long_shift']
     total_DB=[]
@@ -28,6 +28,9 @@ def long_shift_DB(patientID,path):
         scans_path=os.path.join(path, patientID,eye ,'Hoct')
         scans_list=os.listdir(scans_path)
         for scan in scans_list:
+            if scan=='N-V3-1005_2020-10-26-08-55-05_R_TST_V3_9163':
+                a=1
+                pass
             if 'TST' in scan:
                 scan_path = os.path.join(scans_path,scan)
                 data_sum = scan_path + '/DataSummary.txt'  ##get session_id and scan_id
@@ -57,6 +60,8 @@ def long_shift_DB(patientID,path):
                         long_path = scan_path + r'\Longitudinal_2\VG\Data\OrigShiftCalcLongi.mat'
                     if not os.path.isfile(long_path):
                         long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
+                    if not os.path.isfile(long_path):
+                        continue
 
                     try:
                         shift = sio.loadmat(long_path)
@@ -123,4 +128,4 @@ def long_shift_DB(patientID,path):
         plt.grid()
     plt.savefig(os.path.join(path,patientID, 'Analysis','Plots', 'Long_shift.png'))
 
-long_shift_DB('NH01001',r'\\172.17.102.175\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
+long_shift_DB('NH01002',r'\\172.17.102.175\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
