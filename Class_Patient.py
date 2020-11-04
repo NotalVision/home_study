@@ -111,11 +111,12 @@ class Patient:
 
                     vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
                     if vg_output == False:
-
                         email_text, new_row = self.alerts.check_for_alerts(self, new_row, scan_path)
                         self.email_text += email_text
                         self.DB = pd.concat([self.DB, new_row])
                         continue
+
+                    DN_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
 
                     long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
                     if not os.path.isfile(long_path):
@@ -314,6 +315,31 @@ class Patient:
         else:
             return 0,num_clipped_above_0,num_clipped_above_5
 
+
+    def DeepNoa_analysis(self,scan,scan_path, new_row):
+        DN_output=False
+        DN_folder=scan_path+'/VolumeGenerator_4/DeepNoa_ver1.2'
+        if not os.path.isfile(DN_folder):
+            new_row.loc[0, 'DN_output'] = 0
+            return DN_output,new_row
+        else:
+            file_path = DN_folder+r'/DB_Data/DN_scan.csv'
+
+        try:
+            curr_csv = pd.read_csv(file_path)
+            data = curr_csv[[ 'MaxGap']]
+            #data.rename(columns={'NumValidReg': 'NumValidBatchReg', 'QaVsrRemoveOutFOV': 'VsrRemoveOutFOV', 'MeanBMsiVsr':'MSI'},
+                           #inplace=True)
+            data.loc[0,'Patient'] = self.patient_ID
+            new_row.loc[0, 'DN_output'] = 1
+            DN_output=True
+            new_row = new_row.merge(data, left_on='Patient', right_on='Patient', copy=False)
+        except:
+            pass
+
+
+        #self.DB = pd.concat([self.DB, new_row])
+        return DN_output,new_row
 
 
 

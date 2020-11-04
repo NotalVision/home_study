@@ -148,7 +148,7 @@ if __name__ =="__main__":
     network = '172.17.102.175'  # 'nv -nas01'
     data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
     save_path=os.path.join(data_folder,'Analysis')
-    patients = ['NH01001', 'NH01005', 'NH01006', 'NH02001', 'NH02002', 'NH02003']
+    patients = ['NH01001','NH01002', 'NH01005', 'NH01006', 'NH02001', 'NH02002', 'NH02003']
     compliance_analysis(data_folder,save_path,patients)
     Bscan_Class_Distributio_per_Eye_analysis(data_folder,save_path,patients)
     Scan_Class_Distribution_per_Eye_analysis(data_folder,save_path,patients)
