@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import numpy as np
 
 if __name__ =="__main__":
     data_folder = r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data\NH02003'
@@ -15,9 +16,12 @@ if __name__ =="__main__":
         scans_list = os.listdir(data_folder + '/' +eye + '/Hoct') #check for scans
         for scan in scans_list:
             if 'TST' in scan:
-                file_path = data_folder + '/' + eye + '/Hoct/' + scan +'/VolumeGenerator_4\DB_Data/VG_Scan.csv'
-                curr_csv = pd.read_csv(file_path)
-                max_msi[i].append(curr_csv['MaxBMsiAll'])
+                file_path = data_folder + '/' + eye + '/Hoct/' + scan +'/VolumeGenerator_4\DB_Data/VG_Bscan.csv'
+                try:
+                    curr_csv = pd.read_csv(file_path)
+                    max_msi[i].append(max(curr_csv['BMSIAllRaw'].values))
+                except:
+                    max_msi[i].append(np.nan)
 
         time_table = full_table[full_table['Eye'] == eye]
         time_axis = pd.to_datetime(time_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
@@ -27,14 +31,14 @@ if __name__ =="__main__":
         formatter = mdates.DateFormatter('%m-%d')
         ax.plot(time_axis, max_msi[i], marker='o')
         if eye=='L':
-            plt.title('LEFT EYE - Max B-scan MSI vs Time',fontsize=16)
+            plt.title('LEFT EYE - Max Raw B-scan MSI vs Time',fontsize=16)
         if eye=='R':
-            plt.title('RIGHT EYE - Max B-scan MSI vs Time',fontsize=16)
+            plt.title('RIGHT EYE - Max Raw B-scan MSI vs Time',fontsize=16)
         ax.set_xlabel('Date')
         ax.xaxis.set_major_formatter(formatter)
         ax.set_ylabel('Time [sec]')
         ax.xaxis.set_ticks(time_axis)
-        plt.ylim((0, 8))
+        plt.ylim((0, 10))
         plt.xticks(fontsize=8)
         plt.xticks(rotation=45)
 
