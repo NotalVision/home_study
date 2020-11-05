@@ -7,6 +7,7 @@ import numpy as np
 def Bscan_Class_Distributio_per_Eye_analysis(data_folder,save_path,patients):
     data=[]
     labels=[]
+    total=[]
     for patient in patients:
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
@@ -17,20 +18,27 @@ def Bscan_Class_Distributio_per_Eye_analysis(data_folder,save_path,patients):
             sum_class1=sum(class1[class1!=-1])
             sum_class2 = sum(class2[class2 != -1])
             sum_class3 = sum(class3[class3 != -1])
-            data.append([sum_class1,sum_class2,sum_class3])
+            total.append(sum_class1+sum_class2+sum_class3)
+            data.append([sum_class1/total[-1]*100,sum_class2/total[-1]*100,sum_class3/total[-1]*100])
+            #data.append([sum_class1, sum_class2 , sum_class3 ])
             labels.append('{}_{}'.format(patient, eye))
 
     idx = np.asarray([i for i in range(len(data))])
 
-    fig,ax = plt.subplots(figsize = (10,4))
+    fig,ax = plt.subplots(figsize = (20,10))
     for i in range(len(data)):
         ax.bar(i + 0.00, data[i][0], color='cornflowerblue', width=0.25)
         ax.bar(i + 0.25, data[i][1], color='m', width=0.25)
         ax.bar(i + 0.50, data[i][2], color='mediumseagreen', width=0.25)
+        ax.annotate('N={}'.format(total[i]),(i,data[i][0]+3))
+        for j in range(3):
+            if data[i][j]!=0:
+                ax.annotate(F'{data[i][j]/100:.0%}', (i+(0.25*j)-0.1, data[i][j]))
+
     ax.set_xticks(idx)
     ax.set_xticklabels(labels, rotation=65)
     ax.set_xlabel('Patient')
-    ax.set_ylabel('# of Bscans')
+    ax.set_ylabel('% of Total Bscans')
     ax.legend(labels=['Class 1', 'Class 2', 'Class 3'])
     plt.title('Bscan Class Distribution per Eye')
     fig.tight_layout()
@@ -40,6 +48,7 @@ def Bscan_Class_Distributio_per_Eye_analysis(data_folder,save_path,patients):
 def Scan_Class_Distribution_per_Eye_analysis(data_folder,save_path,patients):
     data=[]
     labels=[]
+    total = []
     for patient in patients:
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
@@ -57,17 +66,22 @@ def Scan_Class_Distribution_per_Eye_analysis(data_folder,save_path,patients):
                     class1_2_3 += 1
                 if row['# Class 1'] > 0 and row['# Class 2'] <= 0 and row['# Class 3'] > 0:
                     class1_3 += 1
-            data.append([class1_only,class1_2,class1_3,class1_2_3,])
+            total.append(class1_only+class1_2+class1_2_3+class1_3)
+            data.append([class1_only/ total[-1] * 100,class1_2/ total[-1] * 100,class1_3/ total[-1] * 100,class1_2_3/ total[-1] * 100])
             labels.append('{}_{}'.format(patient, eye))
 
     idx = np.asarray([i for i in range(len(data))])
 
-    fig,ax = plt.subplots(figsize = (10,4))
+    fig,ax = plt.subplots(figsize = (20,10))
     for i in range(len(data)):
         ax.bar(i + 0.00, data[i][0], color='cornflowerblue', width=0.2)
         ax.bar(i + 0.2, data[i][1], color='mediumorchid', width=0.2)
         ax.bar(i + 0.4, data[i][2], color='sandybrown', width=0.2)
         ax.bar(i + 0.6, data[i][3], color='mediumaquamarine', width=0.2)
+        ax.annotate('N={}'.format(total[i]), (i, data[i][0] + 3))
+        for j in range(4):
+            if data[i][j] != 0:
+                ax.annotate(F'{data[i][j] / 100:.0%}', (i + (0.25 * j) - 0.1, data[i][j]))
     ax.set_xticks(idx)
     ax.set_xticklabels(labels, rotation=65)
     ax.set_xlabel('Patient')

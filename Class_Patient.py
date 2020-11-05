@@ -31,12 +31,14 @@ class Patient:
         self.analysis_folder=(data_folder +'/'+ patientID + '/Analysis')
         if not os.path.isdir(self.analysis_folder):
             os.mkdir(self.analysis_folder)
+        self.DB_folder_path=os.path.join(data_folder,'DB','{}_DB.xlsx'.format(self.patient_ID))
         self.DB_path=os.path.join(self.analysis_folder,'{}_DB.xlsx'.format(self.patient_ID))
+        self.DN_path=(self.analysis_folder+ '/'+ patientID + '_{}_DN_data.xlsx'.format(eye))
         self.ver3_DB_path=(self.analysis_folder+ '/'+ patientID + '_{}_ver3_class_data.xlsx'.format(eye))
         self.analysis_summary_path= (self.analysis_folder+ '/' + patientID+'_{}_scan_quality_&_fixation.xlsx'.format(eye))
         self.alert_template = Alert(self)
-        if os.path.isfile(self.DB_path):  #create new DB only if doesn't exist yet
-            self.DB=pd.read_excel(self.DB_path)
+        if os.path.isfile(self.DB_folder_path):  #create new DB only if doesn't exist yet
+            self.DB=pd.read_excel(self.DB_folder_path)
             self.DB=self.DB[self.DB['Eye']==eye]
             self.alerts=self.alert_template.load_existing()
             self.new=0
@@ -109,6 +111,8 @@ class Patient:
                     new_row.loc[0, 'Session'] = session_ID[12:]
                     new_row.loc[0, 'Scan Ver'] = scan_ver
 
+                    #DN_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
+
                     vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
                     if vg_output == False:
                         email_text, new_row = self.alerts.check_for_alerts(self, new_row, scan_path)
@@ -116,7 +120,7 @@ class Patient:
                         self.DB = pd.concat([self.DB, new_row])
                         continue
 
-                    DN_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
+
 
                     long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
                     if not os.path.isfile(long_path):
@@ -147,7 +151,7 @@ class Patient:
         ##visulaization and saving
         ## order by date, by columns, find mean & STD, change names of columns, save to excel files
         columns = ['Patient','Date - Time','Eye','Device', 'ScanID','Session', 'Scan Ver', 'VG Ver','VG_output','checked_for_alerts',
-                   'MSI','Vmsi', 'MaxBMsiVsr','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
+                   'MSI','Vmsi', 'MaxBMsiVsr','Max_BMSIAllRaw','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
                    'VsrRemoveOutFOV', 'MeanGap', 'MaxGap','ClippedPrecent', '# of bscans clipped>0','# of bscans clipped>5',
                     'RegCentX','RegCentY','RegRangeX','RegRangeY',
                    'RegStdX', 'RegStdY','MeanXCover', 'MeanRetinalThickness3*3', 'MeanRetinalThicknessCST',
@@ -207,6 +211,7 @@ class Patient:
             vg_ver=vg_folder[vg_loc+15:]
             new_row.loc[0, 'VG Ver'] = vg_ver
             file_path = vg_folder+r'/DB_Data/VG_scan.csv'
+            vg_bscan_path=vg_folder+r'/DB_Data/VG_Bscan.csv'
             if not os.path.isfile(file_path):
                 file_path = vg_folder + r'/DB_Data/scan.csv'
 
@@ -225,6 +230,8 @@ class Patient:
             data.loc[0,'Patient'] = self.patient_ID
             new_row.loc[0, 'VG_output'] = 1
             vg_output=True
+            vg_bscan=pd.read_csv(vg_bscan_path)
+            data.loc[0, 'Max_BMSIAllRaw']=max(vg_bscan['BMSIAllRaw'].values)
 
 
         except:
@@ -328,8 +335,7 @@ class Patient:
         try:
             curr_csv = pd.read_csv(file_path)
             data = curr_csv[[ 'MaxGap']]
-            #data.rename(columns={'NumValidReg': 'NumValidBatchReg', 'QaVsrRemoveOutFOV': 'VsrRemoveOutFOV', 'MeanBMsiVsr':'MSI'},
-                           #inplace=True)
+            data.rename(columns={'MaxGap': 'MaxGap_DN' },inplace=True)
             data.loc[0,'Patient'] = self.patient_ID
             new_row.loc[0, 'DN_output'] = 1
             DN_output=True
