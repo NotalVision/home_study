@@ -80,7 +80,7 @@ class Patient:
                     new_row.loc[0, 'checked_for_alerts']=0
                     new_row.loc[0, 'Patient'] = self.patient_ID
                     new_row.loc[0, 'Eye'] = self.eye
-                    date_time = scan[12:31]
+                    date_time = scan[-33:-14]
                     try:
                         # a scan may be added to DB if VG did not complete run
                         # In this case, we want to run over it again
@@ -100,7 +100,7 @@ class Patient:
 
                     new_data=True
                     new_row.loc[0,'Date - Time']=date_time
-                    device = scan[0:11]
+                    device = scan[0:-34]
                     new_row.loc[0, 'Device']=device
 
                     if 'TST_V1' in scan:
