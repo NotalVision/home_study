@@ -7,7 +7,7 @@ import scipy.io as sio
 from email.message import EmailMessage
 import smtplib
 import csv
-from Alerts_DB import Alert
+from Alerts import Alert
 import pickle
 pd.options.mode.chained_assignment = None
 from DB_connection import check_if_downloaded
@@ -82,7 +82,7 @@ class Patient:
                     new_row.loc[0, 'checked_for_alerts']=0
                     new_row.loc[0, 'Patient'] = self.patient_ID
                     new_row.loc[0, 'Eye'] = self.eye
-                    date_time = scan[10:29]
+                    date_time = scan[12:31]
                     try:
                         if date_time in self.DB['Date - Time'].array:
                             cur_row=self.DB[self.DB['Date - Time']==date_time]
@@ -97,7 +97,7 @@ class Patient:
 
                     new_data=True
                     new_row.loc[0,'Date - Time']=date_time
-                    device = scan[0:9]
+                    device = scan[0:11]
                     new_row.loc[0, 'Device']=device
 
                     if 'TST_V1' in scan:

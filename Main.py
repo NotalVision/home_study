@@ -34,7 +34,8 @@ if __name__ =="__main__":
         config_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(config_path) as f:
             mailing_list = [i.strip() for i in f.readlines()]
-        patients = ['NH02001','NH02002','NH02003']
+        #patients = ['NH02001','NH02002','NH02003','Jason1004']
+        patients = ['Jason1004']
         send_email=True
         all_patients_new_data=False
         for patientID in patients:
@@ -49,8 +50,10 @@ if __name__ =="__main__":
                 new_patient,new_data=new_patient.full_analysis(host,logger)
                 if new_data==True:
                     patient_new_data=True
-
-                total_DB.append(new_patient.final_DB) ## want to create one DB for both eyes
+                try:
+                    total_DB.append(new_patient.final_DB) ## want to create one DB for both eyes
+                except:
+                    continue
 
 
                 if send_email and new_patient.email_text!='':
