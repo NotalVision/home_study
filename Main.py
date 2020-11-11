@@ -21,8 +21,7 @@ import pytz
 if __name__ =="__main__":
     while True:
         start_time = time.time()
-        set_tz='utc'
-        env=os.environ._data['COMPUTERNAME']
+        env=os.environ._data['COMPUTERNAME'] #to run both locally and on the cloud
         if 'V-S-G' in env:
             network='V-S-G-RNDSTORE'
             host='Cloud'
@@ -37,48 +36,59 @@ if __name__ =="__main__":
         #patients = ['NH02001','NH02002','NH02003','Jason1004']
         patients = ['Jason1004']
         send_email=True
+        mailing_list_path = os.path.join(data_folder, 'mailing_list.txt')
+        with open(mailing_list_path) as f:
+            mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
+        #patients = ['NH02001','NH02002','NH02003']
+        patients = ['Jason1004']
+        send_email=True # can change to false if only want to generate plots
+
+        # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
+        # when new data arrives from any of the patients, this will be updated to true and the the text file will be updated with
+        # the date of data arrival.
         all_patients_new_data=False
         for patientID in patients:
             total_DB=[]
-            patient_new_data=False
+            patient_new_data=False  # will be used to update 'all_patients_new_data'
+            # get timezone
             patient_config_path = os.path.join(data_folder, patientID,'config.txt')
             with open(patient_config_path) as f:
                 set_tz = f.readlines()
                 set_tz=set_tz[0][10:]
             for eye in ['R','L']:
-                new_patient = Patient(data_folder, patientID,eye,logger)
-                new_patient,new_data=new_patient.full_analysis(host,logger)
+                new_patient = Patient(data_folder, patientID,eye,logger) #create new patient object - if DB/alerts exist for this patient - load them.
+                new_patient,new_data=new_patient.full_analysis(host,logger)  # check for new scans
                 if new_data==True:
                     patient_new_data=True
+
                 try:
-                    total_DB.append(new_patient.final_DB) ## want to create one DB for both eyes
+                    total_DB.append(new_patient.final_DB)  ## want to create one DB for both eyes
                 except:
                     continue
 
 
-                if send_email and new_patient.email_text!='':
+                if send_email and new_patient.email_text!='': #email text will be empty if there are not alerts
                     email_text=new_patient.email_text
-                    msg_subject= 'Attention: Patient {}, {} ({})'.format(patientID,eye,host)
+                    msg_subject= 'Attention: Patient {}, {} ({})'.format(patientID,eye,host) #title
                     send_email_func(email_text,mailing_list,msg_subject)
 
 
-
-            if len(total_DB)==0: ## no scans in both eyes
+            if len(total_DB)==0: # no new scans in both eyes --> no need to update DB/plots
                 continue
-            elif len(total_DB)==1:
-                total_DB = total_DB[0] ## only left or only right
-            elif len(total_DB)==2:
-                total_DB = pd.concat([total_DB[0], total_DB[1]]) ##left and right
+            elif len(total_DB)==1: # new scans only in left eye or right eye --> change from [DB] to DB
+                total_DB = total_DB[0]
+            elif len(total_DB)==2: # new scans in both eyes --> concat left and right, change from [right_DB, left_DB] to DB
+                total_DB = pd.concat([total_DB[0], total_DB[1]])
 
             total_DB = total_DB.sort_values(by='Date - Time')
 
             try:
                 total_DB.to_excel(os.path.join(data_folder, 'DB', '{}_DB.xlsx'.format(new_patient.patient_ID)))
-                total_DB.to_excel(new_patient.DB_path) ## in case this is open by another user
-            except:
+                total_DB.to_excel(new_patient.DB_path)
+            except: ## in case this is open by another user
                 print ('Could not save display DB- open by another user ')
 
-            ## merge
+            ## merge left and right DB
             merge_eye_excels(new_patient, '/{}_{}_ver3_class_data.xlsx', '{}_ver3_class_data.xlsx'.format(patientID))
             merge_eye_excels(new_patient, '/{}_{}_scan_quality_&_fixation.xlsx',
                              '{}_scan_quality_&_fixation.xlsx'.format(patientID))
@@ -98,7 +108,7 @@ if __name__ =="__main__":
             if patient_new_data==True:
                 all_patients_new_data=True
 
-
+        # if no data received from any of the patients, check when was the last date data was received
         if all_patients_new_data==False:
             with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'r') as f:
                 last_scan_date = f.readlines()
@@ -110,13 +120,12 @@ if __name__ =="__main__":
                     email_text = 'No scans were received from any of the patients on {}'.format(yesterday)
                     msg_subject = 'Attention: No incoming scans on {}'.format(yesterday)
                     send_email_func(email_text, mailing_list, msg_subject)
-                    with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
-                        f.write(str(today.date()))
 
-        else:  ##update date of last scan
-            with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
-                today = datetime.now(pytz.timezone("{}".format(set_tz)))
-                f.write(str(today.date()))
+
+        # update date of last scan in both cases - if new data arrived or  if email was sent
+        with open(os.path.join(data_folder, 'last_Scan_date.txt'), 'w') as f:
+            today = datetime.now(pytz.timezone("{}".format(set_tz)))
+            f.write(str(today.date()))
 
         print (time.asctime(time.localtime(time.time())))
         print ('elapsed_time=',time.time() - start_time)

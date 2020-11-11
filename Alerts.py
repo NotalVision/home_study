@@ -16,6 +16,29 @@ import math
 
 
 class Alert:
+    '''
+    Each patient object has an alert object
+    This object contains 2 main dictionaries:
+    1. Params dic: contains the info from the patients config file - the params and thresholds
+    This dic is created every time the progrm runs, in case the config file was changed
+    { param: [low thresh, high thresh, number of events required for alert] }
+    2. Alerts dic: contains the current alerts for this patient
+    This dic is saved under the patients alert folder, and loaded each time
+    {Right: { MSI: {scan date: value}
+                   {scan date: value}}
+            { VMSI: {scan date: value}
+                   {scan date: value}}
+            { RegX: {scan date: value}
+                   {scan date: value}}
+                   ....
+    {Left: { MSI: {scan date: value}
+                   {scan date: value}}
+            { VMSI: {scan date: value}
+                   {scan date: value}}
+            { RegX: {scan date: value}
+                   {scan date: value}}
+                   ...
+    '''
     def __init__(self,patient):
         self.patient=patient.patient_ID
         self.path=patient.analysis_folder+'/Alerts'
@@ -26,11 +49,14 @@ class Alert:
         if not os.path.isfile(self.text_file):
             with open(self.text_file,'w') as f:
                 f.writelines('Alert History for patient '+patient.patient_ID)
+        # create params dic by reading excel file
         self.params_path = os.path.join(self.path, 'Alerts_params.xlsx')
         self.params_dic={}
         if os.path.isfile(self.params_path):
-            a=pd.read_excel(self.params_path)
-            for ind,param in a.iterrows():
+            params_file=pd.read_excel(self.params_path)
+            # iterate over the rows of the excel, creating a dic of the shape:
+            # { param: [low thresh, high thresh, number of events required for alert] }
+            for ind,param in params_file.iterrows():
                 row=param.T
                 self.params_dic[row.T[0]] = [row.T[1], row.T[2], row.T[3]]
                 # if row.T[0] in self.params_dic.keys():
@@ -41,6 +67,10 @@ class Alert:
 
 
     def load_existing(self):
+        '''
+        If alerts dic already exists for the patient, load it
+        :return: self
+        '''
         try:
             with open(self.path + '/alerts.pkl', 'rb') as f:
                 self.alert_dic=pickle.load(f)
@@ -49,12 +79,14 @@ class Alert:
             return self.create_new()
 
     def create_new(self):
-        #alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
+        '''
+        creates a new alerts dic in the shape described above
+        :return:
+        '''
         alert_types=list(self.params_dic.keys())
 
 
         eye = ['L', 'R']
-
         partition_by_alert = dict(zip(alert_types, [dict() for i in alert_types]))
         for alert in alert_types:
             for i in range(len(self.params_dic[alert])):
@@ -150,55 +182,6 @@ class Alert:
                         alerts[e][param][param_sec] = {}
                     continue
 
-        # if abs(new_row['# Class 1'].values[0]) <=70:
-        #     alerts[e]['class_1'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 bscans: ' + str(new_row['# Class 1'].values[0]) + '\n'+scan_path+'\n')
-        #     if len(alerts[e]['class_1']) >= 2:
-        #         email_text += '# Class 1 Bscans was low in the last 2 scans:' + '\n'
-        #         for i in alerts[e]['class_1']:
-        #             email_text += str(alerts[e]['class_1'][i])
-        #         email_text+='\n'
-        #         alerts[e]['class_1'] = {}
-        # if abs(new_row['RegStdX'].values[0]) >300:
-        #     alerts[e]['RegStdX'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_X: ' + str(new_row['RegStdX'].values[0]) + 'um \n'+scan_path+'\n')
-        #     if len(alerts[e]['RegStdX']) >= 2:
-        #         email_text += 'RegSTD in the X axis was high in 2 of the last scans:' + '\n'
-        #         for i in alerts[e]['RegStdX']:
-        #             email_text += str(alerts[e]['RegStdX'][i])
-        #         email_text+='\n'
-        #         alerts[e]['RegStdX'] = {}
-        # if abs(new_row['RegStdY'].values[0]) >300:
-        #     alerts[e]['RegStdY'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nRegSTD_Y: ' + str(new_row['RegStdY'].values[0]) + 'um \n'+scan_path+'\n')
-        #     if len(alerts[e]['RegStdY']) >= 2:
-        #         email_text += 'RegSTD in the Y axis was high in 2 of the last scans:' + '\n'
-        #         for i in alerts[e]['RegStdY']:
-        #             email_text += str(alerts[e]['RegStdY'][i])
-        #         email_text+='\n'
-        #         alerts[e]['RegStdY'] = {}
-        # if abs(new_row['MaxGap'].values[0]) >250:
-        #     alerts[e]['MaxGap'][date]=('Scan Date: '+ str(new_row['Date - Time'].values[0]) +
-        #                                      ', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nMaxGap: ' + str(new_row['MaxGap'].values[0]) + '\n'+scan_path+'\n')
-        #     if len(alerts[e]['MaxGap']) >= 2:
-        #         email_text += 'Max gap was high in 2 of the last scans:' + '\n'
-        #         for i in alerts[e]['MaxGap']:
-        #             email_text += str(alerts[e]['MaxGap'][i])
-        #         email_text+='\n'
-        #         alerts[e]['MaxGap'] = {}
-        #
-        # if new_row['MeanBMsiVsr'].values[0] < 2:
-        #     email_text += ('Low MSI detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nMSI: ' + str(new_row['MeanBMsiVsr'].values[0]) +'\n'+ scan_path+'\n'+'\n')
-        # if new_row['Vmsi'].values < 2:
-        #     email_text += ('Low Vmsi detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\nVmsi: ' + str(new_row['Vmsi'].values[0])  +'\n'+ scan_path+'\n'+'\n')
-        # if new_row['NumValidLines'].values[0] <88:
-        #     email_text += ('Low # Bscans detected in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Bscans: ' + str(new_row['NumValidLines'].values[0])  +'\n'+ scan_path+'\n'+'\n')
-        # if new_row['# Class 1'].values[0] <50:
-        #     email_text += ('# Class 1 Bscans was low in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
-        #                    +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) + '\n# Class 1 Bscans: ' + str(new_row['# Class 1'].values[0])  +'\n'+ scan_path+'\n'+'\n')
         if new_row['Alert_for_clipped'].values[0] ==1:
             email_text += ('High percentage of clipped Bscans in the last scan: \nScan Date: '+ str(new_row['Date - Time'].values[0])
                            +', Scan ID: '+ str(new_row['ScanID'].values[0][:-1]) +'\n'+ scan_path+'\n'+'\n')
