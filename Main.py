@@ -30,12 +30,11 @@ if __name__ =="__main__":
             host = 'Local Host'
         data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
         logger=my_logger(os.path.join(data_folder,'logger'))
-        config_path = os.path.join(data_folder, 'mailing_list.txt')
         mailing_list_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(mailing_list_path) as f:
             mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
-        patients = ['NH02001','NH02002','NH02003']
-        #patients = ['Jason1004']
+        #patients = ['NH02001','NH02002','NH02003']
+        patients = ['Jason1004']
         send_email=True # can change to false if only want to generate plots
 
         # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
@@ -47,6 +46,8 @@ if __name__ =="__main__":
             patient_new_data=False  # will be used to update 'all_patients_new_data'
             # get timezone
             patient_config_path = os.path.join(data_folder, patientID,'config.txt')
+            if not os.path.isfile(patient_config_path):
+                patient_config_path=os.path.join(data_folder,'general_config.txt') #if file not created for patient yet, use general one
             with open(patient_config_path) as f:
                 set_tz = f.readlines()
                 set_tz=set_tz[0][10:]
