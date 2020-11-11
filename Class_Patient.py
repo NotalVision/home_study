@@ -180,7 +180,7 @@ class Patient:
         '''
         self.DB = self.DB.sort_values(by='Date - Time')
         self.final_DB = self.DB
-        # self.final_DB = self.final_DB.round(2)
+        self.final_DB = self.final_DB.round(2)
 
         col = ['Patient', 'Date - Time', 'Eye', 'Scan Ver', 'VG Ver', 'VG_output', 'TimeOut', '88+ Class 1',
                'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
@@ -192,7 +192,7 @@ class Patient:
         self.ver3_DB = self.ver3_DB.round(2)
         self.ver3_DB.to_excel(self.ver3_DB_path)
 
-        #self.final_DB.fillna(-1, inplace=True)
+        self.final_DB.fillna(-1, inplace=True)
         self.DB.loc['Overall Mean'] = self.DB.mean()
         self.DB.loc['STD'] = self.DB.std()
         self.DB.fillna(-1, inplace=True)
