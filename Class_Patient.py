@@ -80,7 +80,7 @@ class Patient:
                     new_row.loc[0, 'checked_for_alerts']=0
                     new_row.loc[0, 'Patient'] = self.patient_ID
                     new_row.loc[0, 'Eye'] = self.eye
-                    date_time = scan[12:31]
+                    date_time = scan[-33:-14]
                     try:
                         # a scan may be added to DB if VG did not complete run
                         # In this case, we want to run over it again
@@ -100,7 +100,7 @@ class Patient:
 
                     new_data=True
                     new_row.loc[0,'Date - Time']=date_time
-                    device = scan[0:11]
+                    device = scan[0:-34]
                     new_row.loc[0, 'Device']=device
 
                     if 'TST_V1' in scan:
@@ -180,7 +180,7 @@ class Patient:
         '''
         self.DB = self.DB.sort_values(by='Date - Time')
         self.final_DB = self.DB
-        # self.final_DB = self.final_DB.round(2)
+        self.final_DB = self.final_DB.round(2)
 
         col = ['Patient', 'Date - Time', 'Eye', 'Scan Ver', 'VG Ver', 'VG_output', 'TimeOut', '88+ Class 1',
                'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
@@ -192,7 +192,7 @@ class Patient:
         self.ver3_DB = self.ver3_DB.round(2)
         self.ver3_DB.to_excel(self.ver3_DB_path)
 
-        #self.final_DB.fillna(-1, inplace=True)
+        self.final_DB.fillna(-1, inplace=True)
         self.DB.loc['Overall Mean'] = self.DB.mean()
         self.DB.loc['STD'] = self.DB.std()
         self.DB.fillna(-1, inplace=True)
