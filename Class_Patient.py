@@ -11,11 +11,10 @@ from Alerts import Alert
 import pickle
 pd.options.mode.chained_assignment = None
 from DB_connection import check_if_downloaded
-from Patient_Utils import check_vg_status,check_if_timeout
+from Patient_Utils import check_vg_status,check_if_timeout,analysis_88
 import logging
 import glob
 from stat import S_ISREG, ST_CTIME, ST_MODE
-
 
 
 
@@ -46,8 +45,6 @@ class Patient:
             self.new=1
             self.alerts=self.alert_template.create_new()
 
-
-
     def full_analysis(self,host,logger):
         if self.new==1:
             self.DB=pd.DataFrame()
@@ -61,7 +58,7 @@ class Patient:
         except:
             scans_list=[]
 
-        isDownloaded = check_if_downloaded(host)
+        isDownloaded = check_if_downloaded(host) # returns sessionID of downloaded sessions
         new_data = False
         for scan in scans_list:
             if 'TST' in scan:
@@ -72,24 +69,30 @@ class Patient:
                         session_ID=f.readline()
                         scan_ID = f.readline()
                 except:
+                    ## if there is no Data summary file, download is not cmoplete, skip to next scan
                     continue
 
-                if int(session_ID[12:-1]) in isDownloaded:
-                    new_row = pd.DataFrame(columns=columns_new_row)
+                if int(session_ID[12:-1]) in isDownloaded: # is scan is marked as downloaded in DB
+                    new_row = pd.DataFrame(columns=columns_new_row) #create a new empty row that will be added to DB at the end
                     new_row.loc[0, 'Scan'] = scan_path
                     new_row.loc[0, 'TimeOut'] = check_if_timeout(scan_path)
                     new_row.loc[0, 'Compliance'] = 1
                     new_row.loc[0, 'checked_for_alerts']=0
                     new_row.loc[0, 'Patient'] = self.patient_ID
                     new_row.loc[0, 'Eye'] = self.eye
-                    date_time = scan[10:29]
+                    date_time = scan[12:31]
                     try:
+                        # a scan may be added to DB if VG did not complete run
+                        # In this case, we want to run over it again
+                        # 1. Check if scan is already in DB (by searching exact date and time)
+                        # 2. If it is, check VG status
                         if date_time in self.DB['Date - Time'].array:
-                            cur_row=self.DB[self.DB['Date - Time']==date_time]
+                            cur_row=self.DB[self.DB['Date - Time']==date_time] # cur_row will be the row in the current DB with the same date
                             cur_vg_output=cur_row['VG_output'].values[0]
-                            if cur_vg_output==1 or cur_vg_output==0:
+                            if cur_vg_output==1 or cur_vg_output==0: #vg_output ==1: Success #vg_output ==0: Fail
                                 continue
-                            if cur_vg_output == 2:
+                            if cur_vg_output == 2: #vg_output ==2: not complete, need to run analysis again
+                                #get vg_data for this row
                                 vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
                                 continue
                     except:
@@ -97,7 +100,7 @@ class Patient:
 
                     new_data=True
                     new_row.loc[0,'Date - Time']=date_time
-                    device = scan[0:9]
+                    device = scan[0:11]
                     new_row.loc[0, 'Device']=device
 
                     if 'TST_V1' in scan:
@@ -114,35 +117,35 @@ class Patient:
                     #DN_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
 
                     vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
-                    if vg_output == False:
+                    if vg_output == False: #send alert for no VG output
                         email_text, new_row = self.alerts.check_for_alerts(self, new_row, scan_path)
                         self.email_text += email_text
                         self.DB = pd.concat([self.DB, new_row])
                         continue
 
+                    # long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
+                    # if not os.path.isfile(long_path):
+                    #     long_path = scan_path + r'\Longitudinal_2\VG\Data\OrigShiftCalcLongi.mat'
+                    # if not os.path.isfile(long_path):
+                    #     long_path = scan_path + r'\Longitudinal_ver3\VG\Data\OrigShiftCalcLongi.mat'
+                    #
+                    # try:
+                    #     shift = sio.loadmat(long_path)
+                    #     shift_x = shift['shift'][0][0]
+                    #     shift_y = shift['shift'][0][1]
+                    #
+                    # except:
+                    #     shift_x = np.nan
+                    #     shift_y = np.nan
+                    #     print('no OrigShiftCalcLongi for ' + scan)
+                    #     logging.info('no OrigShiftCalcLongi for ' + scan)
+                    #
+                    # new_row.loc[0, 'x_long_shift'] = shift_x
+                    # new_row.loc[0, 'y_long_shift'] = shift_y
 
-
-                    long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
-                    if not os.path.isfile(long_path):
-                        long_path = scan_path + r'\Longitudinal_2\VG\Data\OrigShiftCalcLongi.mat'
-                    if not os.path.isfile(long_path):
-                        long_path = scan_path + r'\Longitudinal_ver3\VG\Data\OrigShiftCalcLongi.mat'
-
-                    try:
-                        shift = sio.loadmat(long_path)
-                        shift_x = shift['shift'][0][0]
-                        shift_y = shift['shift'][0][1]
-
-                    except:
-                        shift_x = np.nan
-                        shift_y = np.nan
-                        print('no OrigShiftCalcLongi for ' + scan)
-                        logging.info('no OrigShiftCalcLongi for ' + scan)
-
-                    new_row.loc[0, 'x_long_shift'] = shift_x
-                    new_row.loc[0, 'y_long_shift'] = shift_y
                     ##~~~~~~~~~~Alerts~~~~ #####
                     new_row.rename(columns={'MeanBMsiVsr': 'MSI' },inplace=True)
+                    # check_for_alerts() receives a new row and checks if need to send an alert about it
                     email_text,new_row=self.alerts.check_for_alerts(self,new_row,scan_path)
                     self.email_text+=email_text
                     self.DB=pd.concat([self.DB,new_row])
@@ -160,7 +163,8 @@ class Patient:
                'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
                '% Class 3','Scan']
         try:
-            self.DB=self.DB[columns]
+            self.DB=self.DB[columns] #organizes DB by columns order above
+            #this will give an error if one of the rows does not exist, or if there is no new data
         except:
             return self,new_data
 
@@ -169,9 +173,14 @@ class Patient:
         return self,new_data
 
     def save_one_eye_excels(self):
+        '''
+        This functions receives the total DB of a single eye and saves 2 excel sheets:
+        1. ver3_DB - containing the data for the class distribution
+        2. Total DB with mean and STD calculations
+        '''
         self.DB = self.DB.sort_values(by='Date - Time')
         self.final_DB = self.DB
-        self.final_DB = self.final_DB.round(2)
+        # self.final_DB = self.final_DB.round(2)
 
         col = ['Patient', 'Date - Time', 'Eye', 'Scan Ver', 'VG Ver', 'VG_output', 'TimeOut', '88+ Class 1',
                'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
@@ -179,12 +188,11 @@ class Patient:
         self.ver3_DB = self.final_DB[col]
         self.ver3_DB.loc['Overall Mean'] = self.ver3_DB.mean()
         self.ver3_DB.loc['STD'] = self.ver3_DB.std()
-
         self.ver3_DB.fillna(-1, inplace=True)
         self.ver3_DB = self.ver3_DB.round(2)
         self.ver3_DB.to_excel(self.ver3_DB_path)
 
-        self.final_DB.fillna(-1, inplace=True)
+        #self.final_DB.fillna(-1, inplace=True)
         self.DB.loc['Overall Mean'] = self.DB.mean()
         self.DB.loc['STD'] = self.DB.std()
         self.DB.fillna(-1, inplace=True)
@@ -193,30 +201,34 @@ class Patient:
 
     def extract_VG_data(self,scan,scan_path, new_row):
         vg_output=False
+
+        #want to get VG folder that was created first
         earliest_date=100000000000
         vg_folder='Not Found'
-        for name in glob.glob(scan_path + r'/VolumeGenerator*'):
-            stat=os.stat(name)
+        for name in glob.glob(scan_path + r'/VolumeGenerator*'): # find all folder names with 'VolumeGenerator'
+            stat=os.stat(name) #get the time folder was created
             date=stat[ST_CTIME]
             if date<earliest_date:
                 earliest_date=date
                 vg_folder=name
-        #vg_folder=scan_path+'/VolumeGenerator_4'
+
         if vg_folder=='Not Found':
             new_row.loc[0, 'VG_output'] = 0
             return vg_output,new_row
         else:
             vg_path = vg_folder
-            vg_loc = str.find(vg_folder,'VolumeGenerator')
-            vg_ver=vg_folder[vg_loc+15:]
+            vg_ver_loc = str.find(vg_folder,'VolumeGenerator')
+            vg_ver=vg_folder[vg_ver_loc+15:]
             new_row.loc[0, 'VG Ver'] = vg_ver
             file_path = vg_folder+r'/DB_Data/VG_scan.csv'
-            vg_bscan_path=vg_folder+r'/DB_Data/VG_Bscan.csv'
             if not os.path.isfile(file_path):
-                file_path = vg_folder + r'/DB_Data/scan.csv'
+                file_path = vg_folder + r'/DB_Data/scan.csv' # in some older versions
+            vg_bscan_path=vg_folder+r'/DB_Data/VG_Bscan.csv'
+
 
 
         try:
+            #get data from VG_scan file, save it in 'data' - a pd object. Note - it is different than 'new_row'. they will be concatenated later
             curr_csv = pd.read_csv(file_path)
             data = curr_csv[['MeanBMsiVsr', 'Vmsi', 'MaxBMsiVsr', 'AdjustmentTime', 'RasterTime', 'TotalScanTime',
                              'NumValidLines', 'NumValidReg',
@@ -228,13 +240,14 @@ class Patient:
             data.rename(columns={'NumValidReg': 'NumValidBatchReg', 'QaVsrRemoveOutFOV': 'VsrRemoveOutFOV', 'MeanBMsiVsr':'MSI'},
                            inplace=True)
             data.loc[0,'Patient'] = self.patient_ID
+            vg_bscan = pd.read_csv(vg_bscan_path)
+            data.loc[0, 'Max_BMSIAllRaw'] = max(vg_bscan['BMSIAllRaw'].values)
+
             new_row.loc[0, 'VG_output'] = 1
             vg_output=True
-            vg_bscan=pd.read_csv(vg_bscan_path)
-            data.loc[0, 'Max_BMSIAllRaw']=max(vg_bscan['BMSIAllRaw'].values)
-
 
         except:
+            #if the file does not contain all the rows above - may be a VG error, check which one
             try:
                 status=check_vg_status(vg_path)
                 if status=='running':
@@ -261,11 +274,13 @@ class Patient:
                 new_row.loc[0, 'VG_output'] = 0
                 return vg_output,new_row
 
+
         alert_for_clipped,num_clipped_above_0,num_clipped_above_5=self.check_clipped_param(scan,scan_path,vg_path)
         new_row.loc[0, 'Alert_for_clipped'] = alert_for_clipped
         new_row.loc[0, '# of bscans clipped>0'] = num_clipped_above_0
         new_row.loc[0, '# of bscans clipped>5'] = num_clipped_above_5
-        ## if no VG output, concat current row and move to next scan
+
+        ## concat current row and data
         new_row = new_row.merge(data, left_on='Patient', right_on='Patient', copy=False)
 
         try:
@@ -287,17 +302,27 @@ class Patient:
         return vg_output,new_row
 
     def check_clipped_param(self,scan, scan_path,vg_path):
+        '''
+        This function reads the VG Bscan file, check is alert needs to be sent
+        criterion for alert: more than 10 bscans (in more than one batch) that have 5+ % bscans clipped
+        :return:
+        0/1 - need to send an alert (0 - No, 1 - Yes)
+        num_clipped_above_0: # of clipped bscans that are clipped
+        num_clipped_above_5 # of clipped bscans that are more than 5% clipped
+        This is added to DB and used for plot
+        '''
         clipped_path = vg_path + r'/DB_Data/VG_Bscan.csv'
         try:
             VG_Bscan = pd.read_csv(clipped_path)
         except:
             print('No VG_Bscan file for scan ' + scan)
-            return -1
+            return -1,-1,-1
         try:
             clipped_data = VG_Bscan[['RastIndex', 'BatchIndex', 'ClippedPercent', 'IsClipped','InVs']]
-            clipped_data=clipped_data[clipped_data['InVs']==1]
+            clipped_data=clipped_data[clipped_data['InVs']==1] # Only take bscans that were chosen to be in final 88
 
         except:
+            #handle older versions
             try:
                 clipped_path = scan_path + r'/VolumeGenerator_3/DB_Data/VG_Bscan.csv'
                 VG_Bscan = pd.read_csv(clipped_path)
@@ -307,17 +332,22 @@ class Patient:
                 print('error in reading VG_Bscan ' + scan)
                 logging.info('error in reading VG_Bscan ' + scan)
                 return -1, -1, -1
+
         num_clipped_above_0=len(clipped_data[clipped_data['ClippedPercent']>0])
         num_clipped_above_5 = len(clipped_data[clipped_data['ClippedPercent'] > 5])
-        high_clipped_per=clipped_data[clipped_data['ClippedPercent']>5]
 
+        # check for alert
+
+        high_clipped_per=clipped_data[clipped_data['ClippedPercent']>5]
         batch_list=high_clipped_per['BatchIndex'].values
-        for ind,val in enumerate(batch_list,0): ##from sub batch to batch
+        # we want to check for 10 cases in differnt batches. csv file shows sub batch so need to convert
+        # i.e. 1+2 become 1. 3+4 become 2 etc
+        for ind,val in enumerate(batch_list,0):
             if val%2==1:
                 batch_list[ind]+=1
             batch_list[ind]=batch_list[ind]/2
         batch_set=set(batch_list) ##get unique
-        if len(batch_set)>=2 and len(batch_list)>=10:
+        if len(batch_set)>=2 and len(batch_list)>=10: #need to send alert
             return 1,num_clipped_above_0,num_clipped_above_5
         else:
             return 0,num_clipped_above_0,num_clipped_above_5
@@ -349,21 +379,7 @@ class Patient:
 
 
 
-def analysis_88(new_row_ver3,data):
-    length=len(data)
-    class1=sum(data==1)
-    new_row_ver3.loc[0, '# Class 1']=class1
-    new_row_ver3.loc[0, '# Class 2'] = sum(data == 2)
-    new_row_ver3.loc[0, '# Class 3'] = sum(data == 3)
-    new_row_ver3.loc[0, '% Class 1'] = sum(data == 1)/length*100
-    new_row_ver3.loc[0, '% Class 2'] = sum(data == 2) / length * 100
-    new_row_ver3.loc[0, '% Class 3'] = sum(data == 3) / length * 100
-    new_row_ver3.loc[0, 'Full Scan(88)'] = int((length>=88))
-    over88=0
-    if class1>=88:
-        over88=1
-    new_row_ver3.loc[0, '88+ Class 1']=over88
-    return new_row_ver3
+
 
 
 
