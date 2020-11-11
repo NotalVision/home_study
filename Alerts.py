@@ -24,20 +24,21 @@ class Alert:
     { param: [low thresh, high thresh, number of events required for alert] }
     2. Alerts dic: contains the current alerts for this patient
     This dic is saved under the patients alert folder, and loaded each time
-    {Right: { MSI: {scan date: value}
-                   {scan date: value}}
-            { VMSI: {scan date: value}
-                   {scan date: value}}
-            { RegX: {scan date: value}
-                   {scan date: value}}
-                   ....
-    {Left: { MSI: {scan date: value}
-                   {scan date: value}}
-            { VMSI: {scan date: value}
-                   {scan date: value}}
-            { RegX: {scan date: value}
-                   {scan date: value}}
-                   ...
+    {Right: { MSI: {scan date: value,
+                    scan date: value},
+              VMSI: {scan date: value,
+                    scan date: value},
+             RegX: {scan date: value
+                    scan date: value}
+                   ....},
+    Left: { MSI: {scan date: value,
+                   scan date: value},
+             VMSI: {scan date: value,
+                    scan date: value},
+             RegX: {scan date: value,
+                    scan date: value}
+                   ...}
+    }
     '''
     def __init__(self,patient):
         self.patient=patient.patient_ID
@@ -127,8 +128,8 @@ class Alert:
                     else:
                         email_text += '{} was {} in the last {} scans:'.format(param, high_or_low,
                                                                                self.params_dic[param][2]) + '\n'
-                    for i in alerts[e][param]:
-                        email_text += str(alerts[e][param][i])
+                    for date in alerts[e][param]:
+                        email_text += str(alerts[e][param][date])
                     email_text += '\n'
                     alerts[e][param] = {}
         if new_row['Alert_for_clipped'].values[0] == 1:

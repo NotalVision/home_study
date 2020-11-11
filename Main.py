@@ -28,13 +28,17 @@ if __name__ =="__main__":
         else:
             network='nv-nas01'
             host = 'Local Host'
-        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
+        studies=['Study_at_home','US_tests']
+        curr_study=studies[1]
+        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\{}\Data'.format(network,curr_study)
         logger=my_logger(os.path.join(data_folder,'logger'))
         mailing_list_path = os.path.join(data_folder, 'mailing_list.txt')
         with open(mailing_list_path) as f:
             mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
-        #patients = ['NH02001','NH02002','NH02003']
-        patients = ['Jason1004']
+        if curr_study=='Study_at_home':
+            patients = ['NH02001','NH02002','NH02003']
+        elif curr_study=='US_tests':
+            patients = ['Jason1004']
         send_email=True # can change to false if only want to generate plots
 
         # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
@@ -77,9 +81,11 @@ if __name__ =="__main__":
                 total_DB = pd.concat([total_DB[0], total_DB[1]])
 
             total_DB = total_DB.sort_values(by='Date - Time')
-
+            DB_folder=os.path.join(data_folder, 'DB')
+            if not os.path.isdir(DB_folder):
+                os.mkdir(DB_folder)
             try:
-                total_DB.to_excel(os.path.join(data_folder, 'DB', '{}_DB.xlsx'.format(new_patient.patient_ID)))
+                total_DB.to_excel(os.path.join(DB_folder, '{}_DB.xlsx'.format(new_patient.patient_ID)))
                 total_DB.to_excel(new_patient.DB_path)
             except: ## in case this is open by another user
                 print ('Could not save display DB- open by another user ')
