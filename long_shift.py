@@ -28,9 +28,6 @@ def long_shift_DB(patientID,path):
         scans_path=os.path.join(path, patientID,eye ,'Hoct')
         scans_list=os.listdir(scans_path)
         for scan in scans_list:
-            if scan=='N-V3-1005_2020-10-26-08-55-05_R_TST_V3_9163':
-                a=1
-                pass
             if 'TST' in scan:
                 scan_path = os.path.join(scans_path,scan)
                 data_sum = scan_path + '/DataSummary.txt'  ##get session_id and scan_id
@@ -55,38 +52,28 @@ def long_shift_DB(patientID,path):
 
                     new_row.loc[0, 'Date - Time'] = date_time
 
-                    long_path = scan_path + r'\Longitudinal_ver3\VG\Data\OrigShiftCalcLongi.mat'
-                    if not os.path.isfile(long_path):
-                        long_path = scan_path + r'\Longitudinal_2\VG\Data\OrigShiftCalcLongi.mat'
-                    if not os.path.isfile(long_path):
-                        long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
-                    if not os.path.isfile(long_path):
+                    VG_Scan_path = scan_path + r'\VolumeGenerator_4\DB_Data\VG_Scan.csv'
+                    if not os.path.isfile(VG_Scan_path):
                         continue
 
                     try:
-                        shift = sio.loadmat(long_path)
-                        shift_x = shift['shift'][0][0]
-                        shift_y = shift['shift'][0][1]
-
+                        VG_Scan = pd.read_csv(VG_Scan_path)
+                        new_row.loc[0, 'x_long_shift'] = VG_Scan['LongiRegShiftX'].values[0]
+                        new_row.loc[0, 'y_long_shift'] = VG_Scan['LongiRegShiftY'].values[0]
                     except:
-                        try:
-                            shift_x = shift['OrigShiftCalcLongi'][0][0]
-                            shift_y = shift['OrigShiftCalcLongi'][0][1]
-                        except:
-                            shift_x = np.nan
-                            shift_y = np.nan
-                            print('no OrigShiftCalcLongi for ' + scan)
-
-                    new_row.loc[0, 'x_long_shift'] = shift_x
-                    new_row.loc[0, 'y_long_shift'] = shift_y
+                        print ('Cant get long shift data')
+                        continue
 
                     DB = pd.concat([DB, new_row])
         DB = DB.sort_values(by='Date - Time')
         total_DB.append(DB)
-    writer = pd.ExcelWriter(db_path , engine='xlsxwriter')
-    total_DB[1].to_excel(writer, sheet_name='L')
-    total_DB[0].to_excel(writer, sheet_name='R')
-    writer.save()
+    try:
+        writer = pd.ExcelWriter(db_path , engine='xlsxwriter')
+        total_DB[1].to_excel(writer, sheet_name='L')
+        total_DB[0].to_excel(writer, sheet_name='R')
+        writer.save()
+    except:
+        print ('Cant save DB - open by another user')
 
 
     fig = plt.figure(figsize=(20, 10))
@@ -128,4 +115,4 @@ def long_shift_DB(patientID,path):
         plt.grid()
     plt.savefig(os.path.join(path,patientID, 'Analysis','Plots', 'Long_shift.png'))
 
-long_shift_DB('NH02001',r'\\172.17.102.175\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')
+long_shift_DB('NH02003',r'\\nv-nas01\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data')

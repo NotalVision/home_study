@@ -32,7 +32,7 @@ class Patient:
             os.mkdir(self.analysis_folder)
         self.DB_folder_path=os.path.join(data_folder,'DB','{}_DB.xlsx'.format(self.patient_ID))
         self.DB_path=os.path.join(self.analysis_folder,'{}_DB.xlsx'.format(self.patient_ID))
-        self.DN_path=(self.analysis_folder+ '/'+ patientID + '_{}_DN_data.xlsx'.format(eye))
+        self.DN_path=os.path.join(self.analysis_folder,'{}_DN_DB.xlsx'.format(self.patient_ID))
         self.ver3_DB_path=(self.analysis_folder+ '/'+ patientID + '_{}_ver3_class_data.xlsx'.format(eye))
         self.analysis_summary_path= (self.analysis_folder+ '/' + patientID+'_{}_scan_quality_&_fixation.xlsx'.format(eye))
         self.alert_template = Alert(self)
@@ -44,6 +44,13 @@ class Patient:
         else:
             self.new=1
             self.alerts=self.alert_template.create_new()
+        if os.path.isfile(self.DN_path):
+            self.DN_DB = pd.read_excel(self.DN_path)
+            self.DN_DB = self.DN_DB[self.DN_DB['Eye'] == eye]
+        else:
+            self.DN_DB = pd.DataFrame()
+
+
 
     def full_analysis(self,host,logger):
         if self.new==1:
@@ -82,11 +89,21 @@ class Patient:
                     new_row.loc[0, 'Eye'] = self.eye
                     date_time = scan[-33:-14]
                     try:
-                        # a scan may be added to DB if VG did not complete run
-                        # In this case, we want to run over it again
-                        # 1. Check if scan is already in DB (by searching exact date and time)
-                        # 2. If it is, check VG status
+                        #check if scan already in DB
                         if date_time in self.DB['Date - Time'].array:
+                            try: #check if scan wad added to DN_DB (might be added to DB before DN was running)
+                                vg_4_folder = os.path.join(scan_path, 'VolumeGenerator_4')
+                                if self.DN_DB.empty or (os.path.isdir(vg_4_folder) and date_time not in self.DN_DB['Date - Time'].array) :
+                                    new_row.loc[0, 'Date - Time'] = date_time
+                                    #new_row.loc[0, 'MSI']=self.DB[self.DB['Date - Time']==date_time]['MSI'].values
+                                    DN_new_row = self.extract_DeepNoa_data(vg_4_folder, new_row)
+                                    self.DN_DB = pd.concat([self.DN_DB, DN_new_row])
+                                # elif date_time in self.DN_DB['Date - Time'].array and self.DN_DB[self.DN_DB['Date - Time']==date_time]['DN_output'].values==0:
+
+                            except:
+                                pass
+                            # a scan may be added to DB if VG did not complete run
+                            # In this case we want to run over it again, so need to check VG status
                             cur_row=self.DB[self.DB['Date - Time']==date_time] # cur_row will be the row in the current DB with the same date
                             cur_vg_output=cur_row['VG_output'].values[0]
                             if cur_vg_output==1 or cur_vg_output==0: #vg_output ==1: Success #vg_output ==0: Fail
@@ -114,7 +131,7 @@ class Patient:
                     new_row.loc[0, 'Session'] = session_ID[12:]
                     new_row.loc[0, 'Scan Ver'] = scan_ver
 
-                    #DN_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
+
 
                     vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
                     if vg_output == False: #send alert for no VG output
@@ -123,25 +140,11 @@ class Patient:
                         self.DB = pd.concat([self.DB, new_row])
                         continue
 
-                    # long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
-                    # if not os.path.isfile(long_path):
-                    #     long_path = scan_path + r'\Longitudinal_2\VG\Data\OrigShiftCalcLongi.mat'
-                    # if not os.path.isfile(long_path):
-                    #     long_path = scan_path + r'\Longitudinal_ver3\VG\Data\OrigShiftCalcLongi.mat'
-                    #
-                    # try:
-                    #     shift = sio.loadmat(long_path)
-                    #     shift_x = shift['shift'][0][0]
-                    #     shift_y = shift['shift'][0][1]
-                    #
-                    # except:
-                    #     shift_x = np.nan
-                    #     shift_y = np.nan
-                    #     print('no OrigShiftCalcLongi for ' + scan)
-                    #     logging.info('no OrigShiftCalcLongi for ' + scan)
-                    #
-                    # new_row.loc[0, 'x_long_shift'] = shift_x
-                    # new_row.loc[0, 'y_long_shift'] = shift_y
+
+                    vg_4_folder = os.path.join(scan_path, 'VolumeGenerator_4')
+                    if os.path.isdir(vg_4_folder):
+                        DN_new_row = self.extract_DeepNoa_data(vg_4_folder, new_row)
+                        self.DN_DB = pd.concat([self.DN_DB, DN_new_row])
 
                     ##~~~~~~~~~~Alerts~~~~ #####
                     new_row.rename(columns={'MeanBMsiVsr': 'MSI' },inplace=True)
@@ -151,10 +154,12 @@ class Patient:
                     self.DB=pd.concat([self.DB,new_row])
 
 
+
+
         ##visulaization and saving
         ## order by date, by columns, find mean & STD, change names of columns, save to excel files
         columns = ['Patient','Date - Time','Eye','Device', 'ScanID','Session', 'Scan Ver', 'VG Ver','VG_output','checked_for_alerts',
-                   'MSI','Vmsi', 'MaxBMsiVsr','Max_BMSIAllRaw','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
+                   'MSI','Vmsi', 'MaxBMsiVsr','Max_BMSIAllRaw','% MSI<2','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
                    'VsrRemoveOutFOV', 'MeanGap', 'MaxGap','ClippedPrecent', '# of bscans clipped>0','# of bscans clipped>5',
                     'RegCentX','RegCentY','RegRangeX','RegRangeY',
                    'RegStdX', 'RegStdY','MeanXCover', 'MeanRetinalThickness3*3', 'MeanRetinalThicknessCST',
@@ -162,6 +167,15 @@ class Patient:
                    'MeanRetinalThicknessIIM','x_long_shift','y_long_shift','Compliance','TimeOut','Alert_for_clipped','88+ Class 1',
                'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
                '% Class 3','Scan']
+        DN_columns=['Patient','Date - Time','Eye','DN_output','DN_ver','SrfVolume Class','IrfVolume Class','FluidVolume Class','ClassScoreFluid','Classifier Fluid Decision',
+                    'Fluid Volume No Class','Fluid Decision No Class','EligibleQuant','MSI','MaxGap VG','MaxGapQuant',
+                    '# Bscans in VS','# Bscans Valid for Quant','x_long_shift','y_long_shift','Scan']
+
+        try:
+            self.DN_DB = self.DN_DB[DN_columns]
+        except:
+            pass
+
         try:
             self.DB=self.DB[columns] #organizes DB by columns order above
             #this will give an error if one of the rows does not exist, or if there is no new data
@@ -169,6 +183,7 @@ class Patient:
             return self,new_data
 
         self.save_one_eye_excels()
+
 
         return self,new_data
 
@@ -198,6 +213,7 @@ class Patient:
         self.DB.fillna(-1, inplace=True)
         self.DB = self.DB.round(2)
         self.DB.to_excel(self.analysis_summary_path)
+        #self.DN_DB.to_excel(self.DN_path)
 
     def extract_VG_data(self,scan,scan_path, new_row):
         vg_output=False
@@ -212,6 +228,7 @@ class Patient:
                 earliest_date=date
                 vg_folder=name
 
+        #vg_folder = scan_path + r'/VolumeGenerator_4'
         if vg_folder=='Not Found':
             new_row.loc[0, 'VG_output'] = 0
             return vg_output,new_row
@@ -242,6 +259,11 @@ class Patient:
             data.loc[0,'Patient'] = self.patient_ID
             vg_bscan = pd.read_csv(vg_bscan_path)
             data.loc[0, 'Max_BMSIAllRaw'] = max(vg_bscan['BMSIAllRaw'].values)
+            msi_list=vg_bscan['BMSIAllRaw'].values
+            len_msi_list=len(msi_list)
+            msi_list_lower_than2=msi_list[msi_list<2]
+            msi_lower_than2=len(msi_list_lower_than2)/len_msi_list*100
+            data.loc[0, '% MSI<2']=msi_lower_than2
 
             new_row.loc[0, 'VG_output'] = 1
             vg_output=True
@@ -353,29 +375,64 @@ class Patient:
             return 0,num_clipped_above_0,num_clipped_above_5
 
 
-    def DeepNoa_analysis(self,scan,scan_path, new_row):
-        DN_output=False
-        DN_folder=scan_path+'/VolumeGenerator_4/DeepNoa_ver1.2'
-        if not os.path.isfile(DN_folder):
-            new_row.loc[0, 'DN_output'] = 0
-            return DN_output,new_row
-        else:
-            file_path = DN_folder+r'/DB_Data/DN_scan.csv'
+    def extract_DeepNoa_data(self,vg_folder, new_row):
+        VG_Scan_path = os.path.join(vg_folder,'DB_Data','VG_Scan.csv')
+        if not os.path.isfile(VG_Scan_path):
+            print ('No VG_scan file for scan {}'.format(vg_folder))
+            return new_row
+        try:
+            VG_Scan = pd.read_csv(VG_Scan_path)
+            new_row.loc[0, 'x_long_shift'] = VG_Scan['LongiRegShiftX'].values[0]
+            new_row.loc[0, 'y_long_shift'] = VG_Scan['LongiRegShiftY'].values[0]
+            new_row.loc[0, 'MSI'] = VG_Scan['MeanBMsiAll'].values[0]
+            new_row.loc[0, 'MaxGap VG'] = VG_Scan['MaxGap'].values[0]
+
+
+
+        except:
+            print('Cant get long shift data')
+
+        # Find DN folder
+        try:
+            DN_folders=glob.glob(vg_folder + r'/DeepNoa*')
+            DN_folder=DN_folders[0]
+            new_row.loc[0, 'DN_ver']=1.2
+            if not os.path.isdir(DN_folder):
+                new_row.loc[0, 'DN_output'] =0
+                return new_row
+        except:
+            return new_row
+        DN_scan_path = DN_folder+r'/DB_Data/DN_scan.csv'
+        DN_Bscan_VSR_path = DN_folder + r'/DB_Data/DN_Bscan_VSR.csv'
+        DN_Bscan_Quant_path = DN_folder + r'/DB_Data/DN_Bscan_Quant.csv'
 
         try:
-            curr_csv = pd.read_csv(file_path)
-            data = curr_csv[[ 'MaxGap']]
-            data.rename(columns={'MaxGap': 'MaxGap_DN' },inplace=True)
+            curr_csv = pd.read_csv(DN_scan_path)
+            data = curr_csv[['WithFluid','SrfVolumeNl','IrfVolumeNl','FluidVolumeNl','ClassScoreFluid','EligibleQuant','MaxGapQuant']]
+            data.rename(columns={'SrfVolumeNl': 'SrfVolume Class', 'IrfVolumeNl': 'IrfVolume Class',
+                                 'FluidVolumeNl': 'FluidVolume Class'},
+                        inplace=True)
+            seg_fluid_volume=curr_csv['FluidVolumeNoClassNl'].values
+            data.loc[0, 'Fluid Volume No Class'] = seg_fluid_volume
+            if seg_fluid_volume>0:
+                data.loc[0, 'Fluid Decision No Class'] =1
+            else:
+                data.loc[0, 'Fluid Decision No Class'] = 0
+            data.rename(columns={'WithFluid': 'Classifier Fluid Decision'}, inplace=True)
             data.loc[0,'Patient'] = self.patient_ID
             new_row.loc[0, 'DN_output'] = 1
-            DN_output=True
             new_row = new_row.merge(data, left_on='Patient', right_on='Patient', copy=False)
+
+            curr_csv = pd.read_csv(DN_Bscan_VSR_path)
+            new_row.loc[0, '# Bscans in VS'] = len(curr_csv)
+
+            curr_csv = pd.read_csv(DN_Bscan_Quant_path)
+            new_row.loc[0, '# Bscans Valid for Quant'] = len(curr_csv)
         except:
-            pass
+            new_row.loc[0, 'DN_output'] = 0
 
 
-        #self.DB = pd.concat([self.DB, new_row])
-        return DN_output,new_row
+        return new_row
 
 
 

@@ -27,7 +27,10 @@ def compliance(data_folder, patient,save_path,events):
         dates=pd.to_datetime(full_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
 
         dates=pd.DatetimeIndex(dates).date
-        first_date=dates[0]
+        try:
+            first_date=dates[0]
+        except:
+            continue
         total=pd.date_range(start=first_date, end=date.today())
         #total = pd.date_range(start=first_date, end=dates[-1])
         missing = pd.date_range(start=first_date, end=date.today()).difference(dates)
