@@ -123,25 +123,7 @@ class Patient:
                         self.DB = pd.concat([self.DB, new_row])
                         continue
 
-                    # long_path = scan_path + r'\Longitudinal\VG\Data\OrigShiftCalcLongi.mat'
-                    # if not os.path.isfile(long_path):
-                    #     long_path = scan_path + r'\Longitudinal_2\VG\Data\OrigShiftCalcLongi.mat'
-                    # if not os.path.isfile(long_path):
-                    #     long_path = scan_path + r'\Longitudinal_ver3\VG\Data\OrigShiftCalcLongi.mat'
-                    #
-                    # try:
-                    #     shift = sio.loadmat(long_path)
-                    #     shift_x = shift['shift'][0][0]
-                    #     shift_y = shift['shift'][0][1]
-                    #
-                    # except:
-                    #     shift_x = np.nan
-                    #     shift_y = np.nan
-                    #     print('no OrigShiftCalcLongi for ' + scan)
-                    #     logging.info('no OrigShiftCalcLongi for ' + scan)
-                    #
-                    # new_row.loc[0, 'x_long_shift'] = shift_x
-                    # new_row.loc[0, 'y_long_shift'] = shift_y
+                    #self.email_text += 'New Scan arrived from patient {} - {}'.format(self.patient_ID, scan_path)
 
                     ##~~~~~~~~~~Alerts~~~~ #####
                     new_row.rename(columns={'MeanBMsiVsr': 'MSI' },inplace=True)

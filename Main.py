@@ -38,7 +38,7 @@ if __name__ =="__main__":
         if curr_study=='Study_at_home':
             patients = ['NH02001','NH02002','NH02003']
         elif curr_study=='US_tests':
-            patients = ['Jason1004']
+            patients = ['Jason1004','Jason1008','Jason1010','444001','444005','444006','444007','444010','444016','444017','8001','8002']#'444008'
         send_email=True # can change to false if only want to generate plots
 
         # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
@@ -91,9 +91,16 @@ if __name__ =="__main__":
                 print ('Could not save display DB- open by another user ')
 
             ## merge left and right DB
-            merge_eye_excels(new_patient, '/{}_{}_ver3_class_data.xlsx', '{}_ver3_class_data.xlsx'.format(patientID))
-            merge_eye_excels(new_patient, '/{}_{}_scan_quality_&_fixation.xlsx',
-                             '{}_scan_quality_&_fixation.xlsx'.format(patientID))
+            try:
+                merge_eye_excels(new_patient, '/{}_{}_ver3_class_data.xlsx',
+                                 '{}_ver3_class_data.xlsx'.format(patientID))
+            except:
+                pass
+            try:
+                merge_eye_excels(new_patient, '/{}_{}_scan_quality_&_fixation.xlsx',
+                                 '{}_scan_quality_&_fixation.xlsx'.format(patientID))
+            except:
+                pass
 
             ## Create Graphs
             save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots')
@@ -101,7 +108,10 @@ if __name__ =="__main__":
                 os.mkdir(save_fig_path)
             events_path = os.path.join(data_folder, patientID, 'CRF/Injections.xlsx')
             events, with_events = load_events(events_path)
-            analysis_graphs(data_folder, patientID, save_fig_path, events, False)
+            try:
+                analysis_graphs(data_folder, patientID, save_fig_path, events, False)
+            except:
+                pass
             ver3_create_graphs(data_folder, patientID, save_fig_path, events, False)
             compliance(data_folder,patientID,save_fig_path,events)
             class_ditrib1(data_folder,new_patient)

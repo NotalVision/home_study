@@ -135,11 +135,11 @@ class Alert:
         if new_row['Alert_for_clipped'].values[0] == 1:
             email_text += ('High percentage of clipped Bscans in the last scan: \nScan Date: ' + str(
                 new_row['Date - Time'].values[0])
-                           + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n' + scan_path + '\n' +scan_path.replace('V-S-G-RNDSTORE','172.30.2.197') + '\n'+scan_path.replace('V-S-G-RNDSTORE','nv-nas01')+ '\n')
+                           + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n'  +scan_path.replace('V-S-G-RNDSTORE','172.30.2.197') + '\n'+scan_path.replace('V-S-G-RNDSTORE','nv-nas01')+ '\n')
 
         if new_row['TimeOut'].values[0] == 1:
             email_text += ('Timeout reported in the last scan: \nScan Date: ' + str(new_row['Date - Time'].values[0])
-                           + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n' + scan_path + '\n'+scan_path.replace('V-S-G-RNDSTORE','172.30.2.197') + '\n' +scan_path.replace('V-S-G-RNDSTORE','nv-nas01')+ '\n' + '\n')
+                           + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n' +scan_path.replace('V-S-G-RNDSTORE','172.30.2.197') + '\n' +scan_path.replace('V-S-G-RNDSTORE','nv-nas01')+ '\n' + '\n')
 
         with open(patient.alerts.path + '/alerts.pkl', 'wb') as f:
             pickle.dump(alerts, f, pickle.HIGHEST_PROTOCOL)
