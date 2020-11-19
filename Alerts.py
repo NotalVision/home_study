@@ -121,7 +121,7 @@ class Alert:
                     abs(new_row[param].values[0]) > self.params_dic[param][1]):
                 alerts[e][param][date] = ('Scan Date: ' + str(new_row['Date - Time'].values[0]) + ', Scan ID: ' + str(
                     new_row['ScanID'].values[0][:-1]) + '\n' + param + ': ' + str(
-                    new_row[param].values[0]) + '\n' + scan_path + '\n'+scan_path.replace('V-S-G-RNDSTORE','172.30.2.197') + '\n' +scan_path.replace('V-S-G-RNDSTORE','nv-nas01')+ '\n')
+                    new_row[param].values[0])  + '\n'+scan_path.replace('V-S-G-RNDSTORE','172.30.2.197') + '\n' +scan_path.replace('V-S-G-RNDSTORE','nv-nas01')+ '\n')
                 if len(alerts[e][param]) >= self.params_dic[param][2]:
                     if self.params_dic[param][2] == 1:
                         email_text += '{} was {} in the last scan:'.format(param, high_or_low) + '\n'

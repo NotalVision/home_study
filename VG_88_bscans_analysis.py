@@ -4,10 +4,10 @@ import os
 import matplotlib.pyplot as plt
 from Utils import merge_eye_excels
 
-def class_ditrib1(data_folder,patient):
+def class_ditrib1(data_folder,patient,save_path):
     patientID=patient.patient_ID
     vg_88_path=patient.analysis_folder
-    save_fig_path=(vg_88_path+'/Plots')
+    save_fig_path=save_path
     fig, (ax1, ax2) = plt.subplots(1, 2,figsize=(12, 7))
     for eye in ['R','L']:
         class_table = pd.read_excel(os.path.join(data_folder, patientID, 'Analysis',
@@ -87,10 +87,10 @@ def class_ditrib1(data_folder,patient):
 
 
 
-def class_distrib2(data_folder,patient):
+def class_distrib2(data_folder,patient,save_path):
     patientID = patient.patient_ID
     vg_88_path = patient.analysis_folder
-    save_fig_path = (vg_88_path + '/Plots')
+    save_fig_path = save_path
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 7))
     for eye in ['R', 'L']:
         class_table = pd.read_excel(os.path.join(data_folder, patientID, 'Analysis',

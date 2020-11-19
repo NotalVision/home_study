@@ -147,25 +147,50 @@ def compliance_analysis(data_folder,save_path,patients):
             comp=100-len(missing)/len(total)*100
 
 
-            less_than_88=full_table[full_table['Full Scan(88)']==0]
-            less_than_88_dates = pd.to_datetime(less_than_88['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
-            less_than_88_count=len(pd.DatetimeIndex(less_than_88_dates).date)
-            less_than_88_dates = set(pd.DatetimeIndex(less_than_88_dates).date)
-            less_than_88_dates = len(less_than_88_dates) / len(total) * 100
-            more_than_88=full_table[full_table['Full Scan(88)']!=0]
-            failure = more_than_88[(more_than_88['VG_output'] ==0) | (more_than_88['TimeOut'] == 1)]
+            incomplete=full_table[(full_table['Full Scan(88)']==0)|(full_table['TimeOut']==1)]
+            incomplete=incomplete[incomplete['VG_output']==1]
+            incomplete_dates = pd.to_datetime(incomplete['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
+            incomplete_count=len(pd.DatetimeIndex(incomplete_dates).date)
+            incomplete_dates = pd.DatetimeIndex(incomplete_dates).date
+            incomplete_dates = len(incomplete_dates) / len(full_table) * 100
+
+            failure = full_table[(full_table['VG_output']==0) ]
             failure_dates = pd.to_datetime(failure['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
             failure_count=len(pd.DatetimeIndex(failure_dates).date)
-            failure_dates = set(pd.DatetimeIndex(failure_dates).date)
-            failure_dates = len(failure_dates) / len(total) * 100
-            data.append([comp, less_than_88_dates,failure_dates,len(total)])
-            data_count.append([len(full_table),less_than_88_count,failure_count])
+            failure_dates = pd.DatetimeIndex(failure_dates).date
+            failure_dates = len(failure_dates) / len(full_table) * 100
+            data.append([comp, incomplete_dates,failure_dates,len(total)])
+            data_count.append([len(full_table),incomplete_count,failure_count])
             labels.append('{}_{}'.format(patient, eye))
+
+    mean_comp = []
+    for i in range(len(data)):
+        mean_comp.append(data[i][0])
+    std_comp = np.std(mean_comp)
+    mean_comp = np.mean(mean_comp)
+    mean_incomplete = []
+    for i in range(len(data)):
+        mean_incomplete.append(data[i][1])
+    std_incomplete = np.std(mean_incomplete)
+    mean_incomplete = np.mean(mean_incomplete)
+    mean_failure = []
+    for i in range(len(data)):
+        mean_failure.append(data[i][2])
+    std_failure = np.std(mean_failure)
+    mean_failure = np.mean(mean_failure)
+    data.append([(mean_comp, std_comp),(mean_incomplete, std_incomplete),(mean_failure, std_failure)])
+    labels.append('Mean (over eyes)')
 
     idx = np.asarray([i for i in range(len(data))])
     ax=fig.add_subplot(2,1,1)
     for i in range(len(data)):
-        ax.bar(i + 0.00, data[i][0], color='cornflowerblue', width=0.15)
+        ax.bar(i, data[i][0], color='cornflowerblue', width=0.15)
+        if i != len(data) - 1:
+            ax.annotate(F'{np.round(data[i][0],decimals=0):.0f}%', (i-0.1, data[i][0] + 2))
+        else:
+            ax.annotate(F'{np.round(data[i][0][0], decimals=0):.0f}%\n({np.round(data[i][0][1], decimals=0):.0f}) ',
+                        (i - 0.1, data[i][0][0]))
+
     ax.set_xticks(idx)
     ax.set_xticklabels(labels, rotation=65)
     ax.set_xlabel('Patient')
@@ -173,20 +198,35 @@ def compliance_analysis(data_folder,save_path,patients):
     plt.title('Compliance per Eye',fontsize=18)
 
     ax = fig.add_subplot(2, 1, 2)
-    for i in range(len(data_count)):
-        total=data_count[i][0]-data_count[i][2]-data_count[i][1]
-        ax.bar(i, total, color='cornflowerblue', width=0.15)
-        ax.bar(i , data_count[i][1], bottom=total,color='sandybrown', width=0.15)
-        ax.bar(i, data_count[i][2], bottom=data_count[i][1]+total,color='mediumorchid', width=0.15)
+    for i in range(len(data)):
+        ax.bar(i , data[i][1], color='sandybrown', width=0.15)
+        if i != len(data) - 1:
+            if data[i][1] != 0:
+                ax.annotate(F'{np.round(data[i][1], decimals=0):.0f}%', (i+ 0.1, data[i][1]))
+        else:
+            ax.annotate(F'{np.round(data[i][1][0], decimals=0):.0f}%\n({np.round(data[i][1][1], decimals=0):.0f})', (i + 0.1, data[i][1][0]))
+
+
+        if i != len(data) - 1:
+            ax.bar(i, data[i][2], bottom=data[i][1], color='mediumorchid', width=0.15)
+            if data[i][2] != 0:
+                ax.annotate(F'{np.round(data[i][2], decimals=0):.0f}%',
+                         (i + 0.1,(data[i][2]+data[i][1] +2)))
+        else:
+            ax.bar(i+0.15, data[i][2][0], color='mediumorchid', width=0.15)
+            ax.annotate(F'{np.round(data[i][2][0], decimals=0):.0f}%\n({np.round(data[i][2][1], decimals=0):.0f})',
+                        (i + 0.1, data[i][2][1]))
+
+
 
     ax.set_xticks(idx)
     ax.set_xticklabels(labels, rotation=65)
     ax.set_xlabel('Patient')
-    ax.set_ylabel('# of Scans')
-    ax.legend(labels=['Success', 'Less than 88 Bscans', 'Failure - No VG/TO'], bbox_to_anchor=(1.05, 1))
+    ax.set_ylabel('% of Scans')
+    ax.legend(labels=['Incomplete', 'Failure '], bbox_to_anchor=(1.05, 1))
     plt.title('Success',fontsize=18)
-    plt.tight_layout()
-    plt.ylim([0,100])
+    #plt.tight_layout()
+    plt.ylim([0,120])
     plt.savefig(save_path + '/Compliance.png')
     #plt.show()
 
@@ -265,11 +305,11 @@ def mean_MSI(data_folder,save_path,patients):
             total.append(len(MSI_DB))
             data.append(msi)
             labels.append('{}_{}'.format(patient, eye))
-
-    mean_msi=0
+    mean_msi = []
     for i in range(len(data)):
-        mean_msi+=data[i]
-    mean_msi=mean_msi/len(data)
+        mean_msi.append(data[i])
+    std_msi = np.std(mean_msi)
+    mean_msi = np.mean(mean_msi)
     data.append(mean_msi)
     labels.append('Mean (over eyes)')
     total.append(sum(total))
@@ -279,7 +319,12 @@ def mean_MSI(data_folder,save_path,patients):
     for i in range(len(data)):
         ax.bar(i + 0.00, data[i], color='cornflowerblue', width=0.25)
         ax.annotate('N={}'.format(total[i]),(i-0.1,data[i]+0.5))
-        ax.annotate(F'{np.round(data[i],decimals=1):.1f}', (i-0.1, data[i]+0.05))
+        if i != len(data) - 1:
+            ax.annotate(F'{np.round(data[i],decimals=1):.1f}', (i-0.1, data[i]+0.05))
+        else:
+            ax.annotate(F'{np.round(data[i], decimals=0):.0f} (STD={np.round(std_msi, decimals=0):.0f}) ',
+                        (i +  - 0.1, data[i]))
+
 
 
     ax.set_xticks(idx)
@@ -290,6 +335,51 @@ def mean_MSI(data_folder,save_path,patients):
     plt.ylim([0,8])
     fig.tight_layout()
     plt.savefig(save_path + '/MSI.png')
+    #plt.show()
+
+def MSI_lower_than2(data_folder,save_path,patients):
+    data=[]
+    labels=[]
+    total=[]
+    for patient in patients:
+        DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
+        for eye in ['R','L']:
+            eye_DB=DB[DB['Eye']==eye]
+            MSI_DB=eye_DB[eye_DB['% MSI<2']!=-1]
+            msi = np.mean(MSI_DB['% MSI<2'])
+            total.append(len(MSI_DB))
+            data.append(msi)
+            labels.append('{}_{}'.format(patient, eye))
+
+    mean_msi = []
+    for i in range(len(data)):
+        mean_msi.append(data[i])
+    std_msi = np.std(mean_msi)
+    mean_msi = np.mean(mean_msi)
+    data.append(mean_msi)
+    labels.append('Mean (over eyes)')
+    total.append(sum(total))
+    idx = np.asarray([i for i in range(len(data))])
+
+    fig,ax = plt.subplots(figsize = (20,10))
+    for i in range(len(data)):
+        ax.bar(i + 0.00, data[i], color='cornflowerblue', width=0.25)
+        ax.annotate('N={}'.format(total[i]), (i - 0.1, data[i] + 1))
+        if i != len(data) - 1:
+            ax.annotate(F'{np.round(data[i], decimals=1):.1f}%', (i - 0.1, data[i] + 0.05))
+        else:
+            ax.annotate(F'{np.round(data[i], decimals=0):.0f}% (STD={np.round(std_msi, decimals=0):.0f}) ',
+                        (i + - 0.1, data[i]))
+
+
+    ax.set_xticks(idx)
+    ax.set_xticklabels(labels, rotation=65)
+    ax.set_xlabel('Patient')
+    ax.set_ylabel('% of scans')
+    plt.title('Mean % of Scans with MSI lower than 2')
+    #plt.ylim([0,max(data)])
+    fig.tight_layout()
+    plt.savefig(save_path + '/MSI_lower_than2.png')
     #plt.show()
 
 def clipped(data_folder,save_path,patients):
@@ -379,7 +469,7 @@ def reg(data_folder,save_path,patients):
     for i in range(len(data)):
         ax.bar(i + 0.00, data[i][0], color='cornflowerblue', width=0.25)
         ax.bar(i + 0.25, data[i][1], color='m', width=0.25)
-        ax.annotate('N={}'.format(total[i]),(i,max(data[i])+10))
+        ax.annotate('N={}'.format(total[i]),(i,max(data[i])+5))
         for j in range(2):
             ax.annotate(F'{np.round(data[i][j],decimals=0):.0f}', (i+(0.25*j)-0.1, data[i][j]))
 
@@ -394,16 +484,129 @@ def reg(data_folder,save_path,patients):
     plt.savefig(save_path + '/Regx_Regy.png')
     #plt.show()
 
+
+def eligibilty(data_folder,save_path,patients):
+    data=[]
+    labels=[]
+    total=[]
+    for patient in patients:
+        DB=pd.read_excel(os.path.join(data_folder,patient,'Analysis',patient+'_DN_DB.xlsx'))
+        for eye in ['R','L']:
+            eye_DB=DB[DB['Eye']==eye]
+            low_msi= eye_DB[( eye_DB['MSI']<=2) & ( eye_DB['MSI']!=-1) ]
+            low_msi_count=len(low_msi)/len(eye_DB)*100
+            MaxGapQuant = eye_DB[(eye_DB['MSI'] > 2) & (eye_DB['MaxGapQuant'] >= 300)]
+            maxGap_count=len(MaxGapQuant)/len(eye_DB)*100
+            total.append(len(eye_DB))
+            data.append([low_msi_count,maxGap_count])
+            labels.append('{}_{}'.format(patient, eye))
+
+    mean_low_msi=[]
+    for i in range(len(data)):
+        mean_low_msi.append(data[i][0])
+    std_low_msi = np.std(mean_low_msi)
+    mean_low_msi = np.mean(mean_low_msi)
+    mean_max_gap = []
+    for i in range(len(data)):
+        mean_max_gap.append(data[i][1])
+    std_max_gap = np.std(mean_max_gap)
+    mean_max_gap = np.mean(mean_max_gap)
+    std = [std_low_msi, std_max_gap]
+    data.append([mean_low_msi, mean_max_gap])
+    labels.append('Mean (over eyes)')
+    total.append(sum(total))
+    idx = np.asarray([i for i in range(len(data))])
+
+    fig,ax = plt.subplots(figsize = (20,10))
+    for i in range(len(data)):
+        ax.bar(i + 0.00, data[i][0], color='cornflowerblue', width=0.25)
+        ax.bar(i + 0.25, data[i][1], color='m', width=0.25)
+        ax.annotate('N={}'.format(total[i]),(i,max(data[i])+1))
+        for j in range(2):
+            if i != len(data) - 1:
+                if data[i][j] != 0:
+                    ax.annotate(
+                        F'{np.round(data[i][j], decimals=2):.0f}% ({np.round(data[i][j] * total[i] / 100, decimals=2):.0f})',
+                        (i + (0.25 * j) - 0.1, data[i][j]))
+            else:
+                ax.annotate(F'{np.round(data[i][j], decimals=0):.0f}% (STD={np.round(std[j], decimals=0):.0f}%) ',
+                            (i + (0.25 * j) - 0.15, data[i][j]))
+
+
+    ax.set_xticks(idx)
+    ax.set_xticklabels(labels, rotation=65)
+    ax.set_xlabel('Patient')
+    ax.set_ylabel('% of Scans (# of Ineligible scans)')
+    ax.legend(labels=['MSI<=2','MaxGap>300'])
+    plt.title('Scan Ineligibility')
+    #plt.ylim([0,25])
+    fig.tight_layout()
+    plt.savefig(save_path + '/Ineligibility.png')
+    #plt.show()
+
+
+def MaxGapQuant(data_folder,save_path,patients):
+    data=[]
+    labels=[]
+    total=[]
+    for patient in patients:
+        DB=pd.read_excel(os.path.join(data_folder,patient,'Analysis',patient+'_DN_DB.xlsx'))
+        for eye in ['R','L']:
+            eye_DB=DB[DB['Eye']==eye]
+            eye_DB = eye_DB[eye_DB['MaxGapQuant'] != -1]
+            MaxGapQuant = np.mean(eye_DB['MaxGapQuant'])
+            total.append(len(eye_DB))
+            data.append(MaxGapQuant)
+            labels.append('{}_{}'.format(patient, eye))
+
+    mean_MaxGapQuant=[]
+    for i in range(len(data)):
+        mean_MaxGapQuant.append(data[i])
+    std_MaxGapQuant = np.std(mean_MaxGapQuant)
+    mean_MaxGapQuant = np.mean(mean_MaxGapQuant)
+    data.append(mean_MaxGapQuant)
+    labels.append('Mean (over eyes)')
+    total.append(sum(total))
+    idx = np.asarray([i for i in range(len(data))])
+
+    fig,ax = plt.subplots(figsize = (20,10))
+    for i in range(len(data)):
+        ax.bar(i + 0.00, data[i], color='cornflowerblue', width=0.25)
+        ax.annotate('N={}'.format(total[i]),(i-0.1,data[i]+10))
+        ax.annotate(F'{np.round(data[i],decimals=0):.0f}', (i+-0.1, data[i]))
+        if i==len(data)-1:
+            ax.bar(i + 0.25, std_MaxGapQuant, color='m', width=0.25)
+            ax.annotate(F'STD={np.round(std_MaxGapQuant, decimals=0):.0f}', (i + 0.15, std_MaxGapQuant))
+
+
+
+    ax.set_xticks(idx)
+    ax.set_xticklabels(labels, rotation=65)
+    ax.set_xlabel('Patient')
+    ax.set_ylabel('Max Gap Quant [um]')
+    #ax.legend(labels=['RegStdX','RegStdY'])
+    plt.title('Quantification Max Gap')
+    fig.tight_layout()
+    plt.savefig(save_path + '/Quant Max Gap.png')
+    #plt.show()
+
+
+
+
 if __name__ =="__main__":
     network = '172.17.102.175'  # 'nv -nas01'
     data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
-    save_path=os.path.join(data_folder,'Analysis')
+    VG_save_path=os.path.join(data_folder,'Analysis/VG')
+    DN_save_path = os.path.join(data_folder, 'Analysis/DN')
     patients = ['NH01001','NH01002', 'NH01005', 'NH01006', 'NH02001', 'NH02002', 'NH02003']
     new_patients=['NH02001', 'NH02002', 'NH02003']
-    compliance_analysis(data_folder,save_path,patients)
-    Bscan_Class_Distributio_per_Eye_analysis(data_folder,save_path,new_patients)
-    Scan_Class_Distribution_per_Eye_analysis(data_folder,save_path,new_patients)
-    time(data_folder,save_path,patients)
-    mean_MSI(data_folder,save_path,patients)
-    clipped(data_folder,save_path,new_patients)
-    reg(data_folder,save_path,patients)
+    compliance_analysis(data_folder,VG_save_path,patients)
+    Bscan_Class_Distributio_per_Eye_analysis(data_folder,VG_save_path,new_patients)
+    Scan_Class_Distribution_per_Eye_analysis(data_folder,VG_save_path,new_patients)
+    time(data_folder,VG_save_path,patients)
+    mean_MSI(data_folder,VG_save_path,patients)
+    MSI_lower_than2(data_folder, VG_save_path, patients)
+    clipped(data_folder,VG_save_path,new_patients)
+    reg(data_folder,VG_save_path,patients)
+    eligibilty(data_folder,DN_save_path,patients)
+    MaxGapQuant(data_folder,DN_save_path,patients)
