@@ -46,6 +46,7 @@ if __name__ =="__main__":
                 list2=[filename for filename in os.listdir(data_folder) if filename.startswith('444')]
                 patients=list1+list2
 
+            create_plots=False
 
             # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
             # when new data arrives from any of the patients, this will be updated to true and the the text file will be updated with
@@ -96,7 +97,8 @@ if __name__ =="__main__":
                     total_DN_DB = pd.concat([total_DN_DB[0], total_DN_DB[1]])
 
                 total_DB = total_DB.sort_values(by='Date - Time')
-                total_DN_DB = total_DN_DB.sort_values(by='Date - Time')
+                if not total_DN_DB.empty: #if not empty
+                    total_DN_DB = total_DN_DB.sort_values(by='Date - Time')
                 DB_folder=os.path.join(data_folder, 'DB')
                 if not os.path.isdir(DB_folder):
                     os.mkdir(DB_folder)
@@ -120,26 +122,27 @@ if __name__ =="__main__":
 
 
                 ## Create Graphs
-                plots_path = os.path.join(data_folder, patientID, 'Analysis/Plots')
-                if not os.path.isdir(plots_path):
-                    os.mkdir(plots_path)
-                vg_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/VG')
-                if not os.path.isdir(vg_save_fig_path):
-                    os.mkdir(vg_save_fig_path)
-                DN_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/DN')
-                if not os.path.isdir(DN_save_fig_path):
-                    os.mkdir(DN_save_fig_path)
-                events_path = os.path.join(data_folder, patientID, 'CRF/Injections.xlsx')
-                events, with_events = load_events(events_path)
-                analysis_graphs(data_folder, patientID, vg_save_fig_path, events, False)
-                ver3_create_graphs(data_folder, patientID, vg_save_fig_path, events, False)
-                compliance(data_folder,patientID,vg_save_fig_path,events)
-                class_ditrib1(data_folder,new_patient,vg_save_fig_path)
-                class_distrib2(data_folder,new_patient,vg_save_fig_path)
-                try:
-                    DN_plots(data_folder, patientID, DN_save_fig_path)
-                except:
-                    print ('Could not generate DN plots at this time. Try later (maybe DN is running at the moment)')
+                if create_plots:
+                    plots_path = os.path.join(data_folder, patientID, 'Analysis/Plots')
+                    if not os.path.isdir(plots_path):
+                        os.mkdir(plots_path)
+                    vg_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/VG')
+                    if not os.path.isdir(vg_save_fig_path):
+                        os.mkdir(vg_save_fig_path)
+                    DN_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/DN')
+                    if not os.path.isdir(DN_save_fig_path):
+                        os.mkdir(DN_save_fig_path)
+                    events_path = os.path.join(data_folder, patientID, 'CRF/Injections.xlsx')
+                    events, with_events = load_events(events_path)
+                    analysis_graphs(data_folder, patientID, vg_save_fig_path, events, False)
+                    ver3_create_graphs(data_folder, patientID, vg_save_fig_path, events, False)
+                    compliance(data_folder,patientID,vg_save_fig_path,events)
+                    class_ditrib1(data_folder,new_patient,vg_save_fig_path)
+                    class_distrib2(data_folder,new_patient,vg_save_fig_path)
+                    try:
+                        DN_plots(data_folder, patientID, DN_save_fig_path)
+                    except:
+                        print ('Could not generate DN plots at this time. Try later (maybe DN is running at the moment)')
 
                 if patient_new_data==True:
                     all_patients_new_data=True

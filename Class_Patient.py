@@ -46,7 +46,8 @@ class Patient:
             self.alerts=self.alert_template.create_new()
         if os.path.isfile(self.DN_path):
             self.DN_DB = pd.read_excel(self.DN_path)
-            self.DN_DB = self.DN_DB[self.DN_DB['Eye'] == eye]
+            if not self.DN_DB.empty:
+                self.DN_DB = self.DN_DB[self.DN_DB['Eye'] == eye]
         else:
             self.DN_DB = pd.DataFrame()
 
@@ -130,8 +131,6 @@ class Patient:
                     new_row.loc[0, 'ScanID']=scan_ID[9:15]
                     new_row.loc[0, 'Session'] = session_ID[12:]
                     new_row.loc[0, 'Scan Ver'] = scan_ver
-
-
 
                     vg_output, new_row = self.extract_VG_data(scan, scan_path, new_row)
                     if vg_output == False: #send alert for no VG output
