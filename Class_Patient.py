@@ -51,7 +51,6 @@ class Patient:
             self.DN_DB = pd.DataFrame()
 
 
-
     def full_analysis(self,host,logger):
         if self.new==1:
             self.DB=pd.DataFrame()
@@ -93,12 +92,13 @@ class Patient:
                         if date_time in self.DB['Date - Time'].array:
                             try: #check if scan wad added to DN_DB (might be added to DB before DN was running)
                                 vg_4_folder = os.path.join(scan_path, 'VolumeGenerator_4')
+                                new_row.loc[0, 'Date - Time'] = date_time
                                 if self.DN_DB.empty or (os.path.isdir(vg_4_folder) and date_time not in self.DN_DB['Date - Time'].array) :
-                                    new_row.loc[0, 'Date - Time'] = date_time
-                                    #new_row.loc[0, 'MSI']=self.DB[self.DB['Date - Time']==date_time]['MSI'].values
                                     DN_new_row = self.extract_DeepNoa_data(vg_4_folder, new_row)
                                     self.DN_DB = pd.concat([self.DN_DB, DN_new_row])
-                                # elif date_time in self.DN_DB['Date - Time'].array and self.DN_DB[self.DN_DB['Date - Time']==date_time]['DN_output'].values==0:
+                                elif date_time in self.DN_DB['Date - Time'].array and self.DN_DB[self.DN_DB['Date - Time']==date_time]['DN_output'].values==0:
+                                    DN_new_row = self.extract_DeepNoa_data(vg_4_folder, new_row)
+                                    self.DN_DB = pd.concat([self.DN_DB, DN_new_row])
 
                             except:
                                 pass
@@ -378,6 +378,7 @@ class Patient:
         VG_Scan_path = os.path.join(vg_folder,'DB_Data','VG_Scan.csv')
         if not os.path.isfile(VG_Scan_path):
             print ('No VG_scan file for scan {}'.format(vg_folder))
+            new_row.loc[0, 'DN_output'] = 0
             return new_row
         try:
             VG_Scan = pd.read_csv(VG_Scan_path)
@@ -386,10 +387,10 @@ class Patient:
             new_row.loc[0, 'MSI'] = VG_Scan['MeanBMsiAll'].values[0]
             new_row.loc[0, 'MaxGap VG'] = VG_Scan['MaxGap'].values[0]
 
-
-
         except:
             print('Cant get long shift data')
+            new_row.loc[0, 'DN_output'] = 0
+            return new_row
 
         # Find DN folder
         try:
@@ -400,6 +401,7 @@ class Patient:
                 new_row.loc[0, 'DN_output'] =0
                 return new_row
         except:
+            new_row.loc[0, 'DN_output'] = 0
             return new_row
         DN_scan_path = DN_folder+r'/DB_Data/DN_scan.csv'
         DN_Bscan_VSR_path = DN_folder + r'/DB_Data/DN_Bscan_VSR.csv'
