@@ -16,7 +16,6 @@ import xlsxwriter
 from Utils import merge_eye_excels,send_email_func,my_logger
 import sys
 import pytz
-#from long_shift import long_shift_DB
 
 
 if __name__ =="__main__":
@@ -31,26 +30,22 @@ if __name__ =="__main__":
             host = 'Local Host'
         studies=['Study_at_home','Study_US\Clinics\Elman',r'Study_US\Notal_tests']
         study_names=['Home Study', 'Elman Study','Notal Tests']
+        send_email = False  # can change to false if only want to generate plots
         for curr_study,study_name in zip(studies,study_names):
-            #curr_study=studies[2]
             data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\{}\Data'.format(network,curr_study)
             logger=my_logger(os.path.join(data_folder,'Config','logger'))
             mailing_list_path = os.path.join(data_folder, 'Config','mailing_list.txt')
             with open(mailing_list_path) as f:
                 mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
             if curr_study=='Study_at_home':
-                patients = [filename for filename in os.listdir(data_folder) if filename.startswith('NH02003')]
-                #patients =['NH02001','NH02002','NH02003']
+                patients = [filename for filename in os.listdir(data_folder) if filename.startswith('NH02')]
             elif curr_study == 'Study_US\Clinics\Elman':
                 patients = [filename for filename in os.listdir(data_folder) if filename.startswith('80')]
-                #patients = ['8001', '8002', '8003', '8004']
             elif curr_study == r'Study_US\Notal_tests':
                 list1=[filename for filename in os.listdir(data_folder) if filename.startswith('Jas')]
                 list2=[filename for filename in os.listdir(data_folder) if filename.startswith('444')]
                 patients=list1+list2
-                #patients = ['Jason1004', 'Jason1008', 'Jason1010', '444001', '444005', '444006', '444007',
-                            #'444009', '444010', '444016', '444017']
-            send_email = False  # can change to false if only want to generate plots
+
 
             # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
             # when new data arrives from any of the patients, this will be updated to true and the the text file will be updated with
@@ -82,9 +77,8 @@ if __name__ =="__main__":
 
 
                     if send_email and new_patient.email_text!='': #email text will be empty if there are not alerts
-                        email_text=new_patient.email_text
                         msg_subject= 'Attention: Patient {}, {} ({})'.format(patientID,eye,host) #title
-                        send_email_func(email_text,mailing_list,msg_subject)
+                        send_email_func(new_patient.email_text,mailing_list,msg_subject)
 
 
                 if len(total_DB)==0: # no new scans in both eyes --> no need to update DB/plots
@@ -171,5 +165,5 @@ if __name__ =="__main__":
 
             print (time.asctime(time.localtime(time.time())))
             print ('elapsed_time=',time.time() - start_time)
-            print ('mojo')
+            print ('apollo')
             time.sleep(300)

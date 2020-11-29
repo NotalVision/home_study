@@ -85,8 +85,6 @@ def class_ditrib1(data_folder,patient,save_path):
     merge_eye_excels(patient, '/{}_{}_ver3_class_analysis.xlsx', '{}_ver3_class_analysis.xlsx'.format(patientID))
     return
 
-
-
 def class_distrib2(data_folder,patient,save_path):
     patientID = patient.patient_ID
     vg_88_path = patient.analysis_folder
