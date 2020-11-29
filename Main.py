@@ -29,7 +29,7 @@ if __name__ =="__main__":
         else:
             network='nv-nas01'
             host = 'Local Host'
-        studies=['Study_at_home','US_tests']
+        studies=['Study_at_home','Study_US\Clinics\Elman',r'Study_US\Notal_tests']
         curr_study=studies[1]
         data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\{}\Data'.format(network,curr_study)
         logger=my_logger(os.path.join(data_folder,'Config','logger'))
@@ -38,9 +38,11 @@ if __name__ =="__main__":
             mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
         if curr_study=='Study_at_home':
             patients =['NH02001','NH02002','NH02003']
-        elif curr_study=='US_tests':
-            patients = ['8002']#['Jason1004','Jason1008','444001','444005','444006','444007','444010','444016','444017','8001','8002']
-        send_email=False # can change to false if only want to generate plots
+        elif curr_study=='Study_US\Clinics\Elman':
+            patients = ['8001','8002','8003','8004']
+        elif curr_study==r'Study_US\Notal_tests':
+            patients = ['Jason1004','Jason1008','Jason1010','444001','444005','444006','444007','444008','444009','444010','444016','444017']
+        send_email=True # can change to false if only want to generate plots
 
         # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
         # when new data arrives from any of the patients, this will be updated to true and the the text file will be updated with
@@ -84,12 +86,12 @@ if __name__ =="__main__":
             elif len(total_DB)==2: # new scans in both eyes --> concat left and right, change from [right_DB, left_DB] to DB
                 total_DB = pd.concat([total_DB[0], total_DB[1]])
 
-            if len(total_DN_DB)==0: # no new scans in both eyes --> no need to update DB/plots
-                continue
-            elif len(total_DN_DB)==1: # new scans only in left eye or right eye --> change from [DB] to DB
-                total_DN_DB = total_DN_DB[0]
-            elif len(total_DN_DB)==2: # new scans in both eyes --> concat left and right, change from [right_DB, left_DB] to DB
-                total_DN_DB = pd.concat([total_DN_DB[0], total_DN_DB[1]])
+            # if len(total_DN_DB)==0: # no new scans in both eyes --> no need to update DB/plots
+            #     continue
+            # elif len(total_DN_DB)==1: # new scans only in left eye or right eye --> change from [DB] to DB
+            #     total_DN_DB = total_DN_DB[0]
+            # elif len(total_DN_DB)==2: # new scans in both eyes --> concat left and right, change from [right_DB, left_DB] to DB
+            #     total_DN_DB = pd.concat([total_DN_DB[0], total_DN_DB[1]])
 
             total_DB = total_DB.sort_values(by='Date - Time')
             #total_DN_DB = total_DN_DB.sort_values(by='Date - Time')
@@ -136,15 +138,7 @@ if __name__ =="__main__":
             #     DN_plots(data_folder, patientID, DN_save_fig_path)
             # except:
             #     print ('Could not generate DN plots at this time. Try later (maybe DN is running at the moment)')
-            try:
-                analysis_graphs(data_folder, patientID, save_fig_path, events, False)
-            except:
-                pass
-            ver3_create_graphs(data_folder, patientID, save_fig_path, events, False)
-            compliance(data_folder,patientID,save_fig_path,events)
-            class_ditrib1(data_folder,new_patient)
-            class_distrib2(data_folder,new_patient)
-            #long_shift_DB(patientID,data_folder)
+
             if patient_new_data==True:
                 all_patients_new_data=True
 
