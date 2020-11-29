@@ -32,39 +32,21 @@ if __name__ =="__main__":
         studies=['Study_at_home','Study_US\Clinics\Elman',r'Study_US\Notal_tests']
         study_names=['Home Study', 'Elman Study','Notal Tests']
         for curr_study,study_name in zip(studies,study_names):
-            #curr_study=studies[2]
             data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\{}\Data'.format(network,curr_study)
             logger=my_logger(os.path.join(data_folder,'Config','logger'))
             mailing_list_path = os.path.join(data_folder, 'Config','mailing_list.txt')
             with open(mailing_list_path) as f:
                 mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
             if curr_study=='Study_at_home':
-                patients = [filename for filename in os.listdir(data_folder) if filename.startswith('NH02003')]
-                #patients =['NH02001','NH02002','NH02003']
+                patients = [filename for filename in os.listdir(data_folder) if filename.startswith('NH02')]
             elif curr_study == 'Study_US\Clinics\Elman':
                 patients = [filename for filename in os.listdir(data_folder) if filename.startswith('80')]
-                #patients = ['8001', '8002', '8003', '8004']
             elif curr_study == r'Study_US\Notal_tests':
                 list1=[filename for filename in os.listdir(data_folder) if filename.startswith('Jas')]
                 list2=[filename for filename in os.listdir(data_folder) if filename.startswith('444')]
                 patients=list1+list2
-                #patients = ['Jason1004', 'Jason1008', 'Jason1010', '444001', '444005', '444006', '444007',
-                            #'444009', '444010', '444016', '444017']
-            send_email = False  # can change to false if only want to generate plots
-        studies=['Study_at_home','Study_US\Clinics\Elman',r'Study_US\Notal_tests']
-        curr_study=studies[1]
-        data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\{}\Data'.format(network,curr_study)
-        logger=my_logger(os.path.join(data_folder,'Config','logger'))
-        mailing_list_path = os.path.join(data_folder, 'Config','mailing_list.txt')
-        with open(mailing_list_path) as f:
-            mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
-        if curr_study=='Study_at_home':
-            patients =['NH02001','NH02002','NH02003']
-        elif curr_study=='Study_US\Clinics\Elman':
-            patients = ['8001','8002','8003','8004']
-        elif curr_study==r'Study_US\Notal_tests':
-            patients = ['Jason1004','Jason1008','Jason1010','444001','444005','444006','444007','444008','444009','444010','444016','444017']
-        send_email=True # can change to false if only want to generate plots
+            send_email = True  # can change to false if only want to generate plots
+            create_plots=False
 
             # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
             # when new data arrives from any of the patients, this will be updated to true and the the text file will be updated with
@@ -116,7 +98,8 @@ if __name__ =="__main__":
                     total_DN_DB = pd.concat([total_DN_DB[0], total_DN_DB[1]])
 
                 total_DB = total_DB.sort_values(by='Date - Time')
-                total_DN_DB = total_DN_DB.sort_values(by='Date - Time')
+                if not total_DN_DB.empty: #if not empty
+                    total_DN_DB = total_DN_DB.sort_values(by='Date - Time')
                 DB_folder=os.path.join(data_folder, 'DB')
                 if not os.path.isdir(DB_folder):
                     os.mkdir(DB_folder)
@@ -140,26 +123,27 @@ if __name__ =="__main__":
 
 
                 ## Create Graphs
-                plots_path = os.path.join(data_folder, patientID, 'Analysis/Plots')
-                if not os.path.isdir(plots_path):
-                    os.mkdir(plots_path)
-                vg_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/VG')
-                if not os.path.isdir(vg_save_fig_path):
-                    os.mkdir(vg_save_fig_path)
-                DN_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/DN')
-                if not os.path.isdir(DN_save_fig_path):
-                    os.mkdir(DN_save_fig_path)
-                events_path = os.path.join(data_folder, patientID, 'CRF/Injections.xlsx')
-                events, with_events = load_events(events_path)
-                analysis_graphs(data_folder, patientID, vg_save_fig_path, events, False)
-                ver3_create_graphs(data_folder, patientID, vg_save_fig_path, events, False)
-                compliance(data_folder,patientID,vg_save_fig_path,events)
-                class_ditrib1(data_folder,new_patient,vg_save_fig_path)
-                class_distrib2(data_folder,new_patient,vg_save_fig_path)
-                try:
-                    DN_plots(data_folder, patientID, DN_save_fig_path)
-                except:
-                    print ('Could not generate DN plots at this time. Try later (maybe DN is running at the moment)')
+                if create_plots:
+                    plots_path = os.path.join(data_folder, patientID, 'Analysis/Plots')
+                    if not os.path.isdir(plots_path):
+                        os.mkdir(plots_path)
+                    vg_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/VG')
+                    if not os.path.isdir(vg_save_fig_path):
+                        os.mkdir(vg_save_fig_path)
+                    DN_save_fig_path = os.path.join(data_folder, patientID, 'Analysis/Plots/DN')
+                    if not os.path.isdir(DN_save_fig_path):
+                        os.mkdir(DN_save_fig_path)
+                    events_path = os.path.join(data_folder, patientID, 'CRF/Injections.xlsx')
+                    events, with_events = load_events(events_path)
+                    analysis_graphs(data_folder, patientID, vg_save_fig_path, events, False)
+                    ver3_create_graphs(data_folder, patientID, vg_save_fig_path, events, False)
+                    compliance(data_folder,patientID,vg_save_fig_path,events)
+                    class_ditrib1(data_folder,new_patient,vg_save_fig_path)
+                    class_distrib2(data_folder,new_patient,vg_save_fig_path)
+                    try:
+                        DN_plots(data_folder, patientID, DN_save_fig_path)
+                    except:
+                        print ('Could not generate DN plots at this time. Try later (maybe DN is running at the moment)')
 
                 if patient_new_data==True:
                     all_patients_new_data=True
@@ -183,7 +167,7 @@ if __name__ =="__main__":
                 today = datetime.now(pytz.timezone("{}".format(set_tz)))
                 f.write(str(today.date()))
 
-            print (time.asctime(time.localtime(time.time())))
-            print ('elapsed_time=',time.time() - start_time)
-            print ('mojo')
-            time.sleep(300)
+        print (time.asctime(time.localtime(time.time())))
+        print ('elapsed_time=',time.time() - start_time)
+        print ('mojo')
+        time.sleep(300)
