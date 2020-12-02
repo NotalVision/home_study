@@ -5,6 +5,7 @@ import smtplib
 from email.message import EmailMessage
 import logging
 import sys
+import numpy as np
 
 def merge_eye_excels(new_patient,path,new_path):
     '''
@@ -57,3 +58,19 @@ def my_logger(logger_name, level=logging.DEBUG):
     file_handler = logging.FileHandler(logger_name, mode='a')
     logger.addHandler(file_handler)
     return logger
+
+def DecreasingMSI(MSI_list,percentage):
+    mean_list=[]
+    for ind in range(1,len(MSI_list)+1):
+        tmp_list=MSI_list[0:ind]
+        curr_mean=np.mean(tmp_list)
+        mean_list.append(curr_mean)
+    try:
+        total_max_mean=np.max(mean_list)
+        if total_max_mean*(1-percentage)>mean_list[-1]:
+            return 'Decrease in MSI'
+        else:
+            return ''
+    except:
+        return ''
+

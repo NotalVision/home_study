@@ -47,6 +47,20 @@ def check_vg_status(vg_path):
             status_type='running'
     return status_type
 
+def check_DN_status(vg_path):
+    '''
+    Opens VG log to check status of VG
+    '''
+    vglog_path=vg_path+r'/DB_data/DNLogDetails.csv'
+    with open(vglog_path) as csv_file:
+        rows = reversed(list(csv.reader(csv_file, delimiter=',')))
+        last_line=rows.__next__()
+        if last_line[0]=='11':
+            status_type=last_line[3]
+        else:
+            status_type='running'
+    return status_type
+
 def analysis_88(new_row_ver3,data):
     '''
     Get data from VG_Bscan_VSR file, and add relevant data to the current 'new_row'

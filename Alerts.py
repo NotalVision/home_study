@@ -20,9 +20,9 @@ class Alert:
     Each patient object has an alert object
     This object contains 2 main dictionaries:
     1. Params dic: contains the info from the patients config file - the params and thresholds
-    This dic is created every time the progrm runs, in case the config file was changed
+    This dic is created every time the program runs, in case the config file was changed
     { param: [low thresh, high thresh, number of events required for alert] }
-    2. Alerts dic: contains the current alerts for this patient
+    2. Alerts dic: contains the past (6 -days) alerts for this patient
     This dic is saved under the patients alert folder, and loaded each time
     {Right: { MSI: {scan date: value,
                     scan date: value},
@@ -86,12 +86,11 @@ class Alert:
         '''
         alert_types=list(self.params_dic.keys())
 
-
         eye = ['L', 'R']
         partition_by_alert = dict(zip(alert_types, [dict() for i in alert_types]))
-        for alert in alert_types:
-            for i in range(len(self.params_dic[alert])):
-                partition_by_alert[alert][i]=dict()
+        #for alert in alert_types:
+            #for i in range(len(self.params_dic[alert])):
+                #partition_by_alert[alert][i]=dict()
 
         self.alert_dic = dict(zip(eye, [copy.deepcopy(partition_by_alert) for i in eye]))
         with open(self.path + '/alerts.pkl', 'wb') as f:
@@ -102,17 +101,18 @@ class Alert:
     def check_for_alerts(self, patient, new_row, scan_path):
         email_text = ''
         alerts_object = patient.alerts
-        # alerts_object=alerts_object.check_if_outdated()
+        alerts_object=alerts_object.check_if_outdated()
         alerts = alerts_object.alert_dic
 
         e = patient.eye
         date = new_row['Date - Time'].values[0]
+
         if new_row['VG_output'].values[0] == 0 or new_row['VG_output'].values[0] == 2:
             email_text += ('No VG output in the last scan: \nScan Date: ' + str(new_row['Date - Time'].values[0])
                            + ', Scan ID: ' + str(new_row['ScanID'].values[0][:-1]) + '\n' + scan_path.replace('V-S-G-RNDSTORE','172.30.2.197') + '\n' +scan_path.replace('V-S-G-RNDSTORE','nv-nas01')+ '\n' + '\n')
             return email_text, new_row
 
-        for param in list(alerts[e].keys()):
+        for param in list(alerts[e].keys()): #[msi, vmsi...]
             if math.isnan(self.params_dic[param][0]):
                 high_or_low = 'high'
             else:
@@ -132,6 +132,8 @@ class Alert:
                         email_text += str(alerts[e][param][date])
                     email_text += '\n'
                     alerts[e][param] = {}
+
+
         if new_row['Alert_for_clipped'].values[0] == 1:
             email_text += ('High percentage of clipped Bscans in the last scan: \nScan Date: ' + str(
                 new_row['Date - Time'].values[0])
@@ -203,19 +205,18 @@ class Alert:
 
 
     def check_if_outdated(self):
-        today=date.today()
+        today=datetime.date.today()
         days = datetime.timedelta(6)
         old_date = today - days
-        alert_types=['long_x_shift', 'long_y_shift', 'class_1','RegStdX','RegStdY','MaxGap']
         eyes = ['L', 'R']
         to_remove=[]
         for eye in eyes:
-            for param in list(self.alerts[e].keys()):
-                for item in self.alert_dic[eye][type]:
-                    tmp_item=datetime.datetime.strptime(item,'%Y-%m-%d-%H-%M-%S')
+            for param in list(self.alert_dic[eye].keys()):
+                for date in self.alert_dic[eye][param]:
+                    tmp_item=datetime.datetime.strptime(date,'%Y-%m-%d-%H-%M-%S')
                     tmp_item=tmp_item.date()
                     if tmp_item<old_date:
-                        to_remove.append([eye,type,item])
+                        to_remove.append([eye,param,date])
 
         for i in to_remove:
             self.alert_dic[i[0]][i[1]].pop(i[2])

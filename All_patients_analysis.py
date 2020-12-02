@@ -12,6 +12,8 @@ def Bscan_Class_Distributio_per_Eye_analysis(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             class1=eye_DB['# Class 1']
             class2 = eye_DB['# Class 2']
             class3 = eye_DB['# Class 3']
@@ -69,6 +71,8 @@ def Scan_Class_Distribution_per_Eye_analysis(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             class1_only = 0
             class1_2 = 0
             class1_2_3 = 0
@@ -138,9 +142,13 @@ def compliance_analysis(data_folder,save_path,patients):
             full_table = pd.read_excel(os.path.join(data_folder, patient, 'Analysis',
                                                     '{}_DB.xlsx'.format(patient)))  # read excel file
             full_table=full_table[full_table['Eye']==eye]
+            if full_table.empty:
+                continue
 
             dates=pd.to_datetime(full_table['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
             dates=pd.DatetimeIndex(dates).date
+            if len(dates)==0:
+                continue
             first_date=dates[0]
             total = pd.date_range(start=first_date, end=dates[-1])
             missing = pd.date_range(start=first_date, end=dates[-1]).difference(dates)
@@ -238,6 +246,8 @@ def time(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             eye_DB=eye_DB[eye_DB['AdjustmentTime']!=-1]
             adjustment_time = (np.mean(eye_DB['AdjustmentTime']),np.std(eye_DB['AdjustmentTime']))
             total_time = (np.mean(eye_DB['TotalScanTime']),np.std(eye_DB['TotalScanTime']))
@@ -287,7 +297,7 @@ def time(data_folder,save_path,patients):
     ax.set_ylabel('Time [sec]')
     ax.legend(labels=['Adjustment Time','Raster Time','Total Time'])
     plt.title('Mean Adjustment, Raster, Total time')
-    plt.ylim([0,60])
+    plt.ylim([0,150])
     fig.tight_layout()
     plt.savefig(save_path + '/Adjustment and Total time.png')
     #plt.show()
@@ -300,6 +310,8 @@ def mean_MSI(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             MSI_DB=eye_DB[eye_DB['MSI']!=-1]
             msi = np.mean(MSI_DB['MSI'])
             total.append(len(MSI_DB))
@@ -345,6 +357,8 @@ def MSI_lower_than2(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             MSI_DB=eye_DB[eye_DB['% MSI<2']!=-1]
             msi = np.mean(MSI_DB['% MSI<2'])
             total.append(len(MSI_DB))
@@ -390,6 +404,8 @@ def clipped(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             eye_DB = eye_DB[eye_DB['# of bscans clipped>0'] !=-1]
             Clipped_0 = np.mean(eye_DB['# of bscans clipped>0'])
             Clipped_5 = np.mean(eye_DB['# of bscans clipped>5'])
@@ -445,6 +461,8 @@ def reg(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,'DB',patient+'_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             eye_DB = eye_DB[eye_DB['RegStdX'] != -1]
             RegStdX = np.mean(eye_DB['RegStdX'])
             RegStdY = np.mean(eye_DB['RegStdY'])
@@ -484,7 +502,6 @@ def reg(data_folder,save_path,patients):
     plt.savefig(save_path + '/Regx_Regy.png')
     #plt.show()
 
-
 def eligibilty(data_folder,save_path,patients):
     data=[]
     labels=[]
@@ -493,6 +510,8 @@ def eligibilty(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,patient,'Analysis',patient+'_DN_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             low_msi= eye_DB[( eye_DB['MSI']<=2) & ( eye_DB['MSI']!=-1) ]
             low_msi_count=len(low_msi)/len(eye_DB)*100
             MaxGapQuant = eye_DB[(eye_DB['MSI'] > 2) & (eye_DB['MaxGapQuant'] >= 300)]
@@ -544,7 +563,6 @@ def eligibilty(data_folder,save_path,patients):
     plt.savefig(save_path + '/Ineligibility.png')
     #plt.show()
 
-
 def MaxGapQuant(data_folder,save_path,patients):
     data=[]
     labels=[]
@@ -553,6 +571,8 @@ def MaxGapQuant(data_folder,save_path,patients):
         DB=pd.read_excel(os.path.join(data_folder,patient,'Analysis',patient+'_DN_DB.xlsx'))
         for eye in ['R','L']:
             eye_DB=DB[DB['Eye']==eye]
+            if eye_DB.empty:
+                continue
             eye_DB = eye_DB[eye_DB['MaxGapQuant'] != -1]
             MaxGapQuant = np.mean(eye_DB['MaxGapQuant'])
             total.append(len(eye_DB))
@@ -572,7 +592,7 @@ def MaxGapQuant(data_folder,save_path,patients):
     fig,ax = plt.subplots(figsize = (20,10))
     for i in range(len(data)):
         ax.bar(i + 0.00, data[i], color='cornflowerblue', width=0.25)
-        ax.annotate('N={}'.format(total[i]),(i-0.1,data[i]+10))
+        ax.annotate('N={}'.format(total[i]),(i-0.1,data[i]+4))
         ax.annotate(F'{np.round(data[i],decimals=0):.0f}', (i+-0.1, data[i]))
         if i==len(data)-1:
             ax.bar(i + 0.25, std_MaxGapQuant, color='m', width=0.25)
@@ -591,15 +611,22 @@ def MaxGapQuant(data_folder,save_path,patients):
     #plt.show()
 
 
-
-
 if __name__ =="__main__":
     network = '172.17.102.175'  # 'nv -nas01'
-    data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
+    #data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_at_home\Data'.format(network)
+    data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\Study_US\Clinics\Elman\Data'.format(
+        network)
     VG_save_path=os.path.join(data_folder,'Analysis/VG')
     DN_save_path = os.path.join(data_folder, 'Analysis/DN')
-    patients = ['NH01001','NH01002', 'NH01005', 'NH01006', 'NH02001', 'NH02002', 'NH02003']
-    new_patients=['NH02001', 'NH02002', 'NH02003']
+    # patients = ['NH01001','NH01002', 'NH01005', 'NH01006', 'NH02001', 'NH02002', 'NH02003']
+    # new_patients=['NH02001', 'NH02002', 'NH02003']
+    all_patients=['8001','8002','8003','8004','8005'] #might not have DC
+    patients=[]
+    for patient in all_patients:
+        if os.path.isfile(os.path.join(data_folder, 'DB', patient + '_DB.xlsx')):
+            patients.append(patient)
+    new_patients=patients # only patients with existing DB file
+
     compliance_analysis(data_folder,VG_save_path,patients)
     Bscan_Class_Distributio_per_Eye_analysis(data_folder,VG_save_path,new_patients)
     Scan_Class_Distribution_per_Eye_analysis(data_folder,VG_save_path,new_patients)
@@ -608,5 +635,31 @@ if __name__ =="__main__":
     MSI_lower_than2(data_folder, VG_save_path, patients)
     clipped(data_folder,VG_save_path,new_patients)
     reg(data_folder,VG_save_path,patients)
-    eligibilty(data_folder,DN_save_path,patients)
-    MaxGapQuant(data_folder,DN_save_path,patients)
+    try:
+        eligibilty(data_folder,DN_save_path,new_patients)
+        MaxGapQuant(data_folder,DN_save_path,new_patients)
+    except:
+        print ('Could not generate eligibility/max gap plots')
+
+    all_patients_db_col = ['Patient','Date - Time','Eye','Device', 'ScanID','Session', 'Scan Ver', 'VG Ver','VG_output','checked_for_alerts',
+                   'MSI','Vmsi', 'MaxBMsiVsr','Max_BMSIAllRaw','% MSI<2','AdjustmentTime','RasterTime', 'TotalScanTime', 'NumValidLines','NumValidBatchReg',
+                   'VsrRemoveOutFOV', 'MeanGap', 'MaxGap','ClippedPrecent', '# of bscans clipped>0','# of bscans clipped>5',
+                    'RegCentX','RegCentY','RegRangeX','RegRangeY',
+                   'RegStdX', 'RegStdY','MeanXCover', 'MeanRetinalThickness3*3', 'MeanRetinalThicknessCST',
+                   'MeanRetinalThicknessNIM', 'MeanRetinalThicknessTIM', 'MeanRetinalThicknessSIM',
+                   'MeanRetinalThicknessIIM','x_long_shift','y_long_shift','Compliance','TimeOut','Alert_for_clipped','88+ Class 1',
+               'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
+               '% Class 3','Scan']
+    all_patients_db = pd.DataFrame()
+    for patientID in patients:
+        try:
+            patient_db = os.path.join(data_folder, 'DB','{}_DB.xlsx'.format(patientID))
+            curr_patient_db = pd.read_excel(patient_db)
+        except:
+            print('DB for patient {} does not exist'.format(patientID))
+            continue
+        curr_patient_db = curr_patient_db[all_patients_db_col]
+        all_patients_db = pd.concat([all_patients_db, curr_patient_db])
+    all_patients_db = all_patients_db.sort_values(by=['Date - Time', 'Patient'])
+    save_name = os.path.join(data_folder,'Analysis', 'Combined_DB.xlsx')
+    all_patients_db.to_excel(save_name,index=False)

@@ -13,7 +13,7 @@ from VG_88_bscans_analysis import class_ditrib1,class_distrib2
 from DN_plots import DN_plots
 from datetime import date
 import xlsxwriter
-from Utils import merge_eye_excels,send_email_func,my_logger
+from Utils import merge_eye_excels,send_email_func,my_logger,DecreasingMSI
 import sys
 import pytz
 
@@ -30,7 +30,8 @@ if __name__ =="__main__":
             host = 'Local Host'
         studies=['Study_at_home','Study_US\Clinics\Elman',r'Study_US\Notal_tests']
         study_names=['Home Study', 'Elman Study','Notal Tests']
-        send_email = False  # can change to false if only want to generate plots
+        send_email = True  # can change to false if only want to generate plots
+        dec_MSI_email=True
         for curr_study,study_name in zip(studies,study_names):
             data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\{}\Data'.format(network,curr_study)
             logger=my_logger(os.path.join(data_folder,'Config','logger'))
@@ -38,7 +39,7 @@ if __name__ =="__main__":
             with open(mailing_list_path) as f:
                 mailing_list = [i.strip() for i in f.readlines()] # separate text into list items
             if curr_study=='Study_at_home':
-                patients = [filename for filename in os.listdir(data_folder) if filename.startswith('NH02')]
+                patients = [filename for filename in os.listdir(data_folder) if filename.startswith('NH02003')]
             elif curr_study == 'Study_US\Clinics\Elman':
                 patients = [filename for filename in os.listdir(data_folder) if filename.startswith('80')]
             elif curr_study == r'Study_US\Notal_tests':
@@ -46,7 +47,7 @@ if __name__ =="__main__":
                 list2=[filename for filename in os.listdir(data_folder) if filename.startswith('444')]
                 patients=list1+list2
 
-            create_plots=False
+            create_plots=True
 
             # this variable is used to determine if any new data arrived today. The last day of data arrival is saved in a text file in data folder
             # when new data arrives from any of the patients, this will be updated to true and the the text file will be updated with
@@ -62,8 +63,9 @@ if __name__ =="__main__":
                 if not os.path.isfile(patient_config_path):
                     patient_config_path=os.path.join(data_folder,'Config','general_config.txt') #if file not created for patient yet, use general one
                 with open(patient_config_path) as f:
-                    set_tz = f.readlines()
-                    set_tz=set_tz[0][10:]
+                    set_tz = f.readline()
+                    set_tz=set_tz[10:].strip('\n')
+                    msi_last_date=f.readline()
                 for eye in ['R','L']:
                     new_patient = Patient(data_folder, patientID,eye,logger) #create new patient object - if DB/alerts exist for this patient - load them.
                     new_patient,new_data=new_patient.full_analysis(host,logger)  # check for new scans
@@ -76,6 +78,10 @@ if __name__ =="__main__":
                     except:
                         continue
 
+                    max_bmsi_raw = new_patient.final_DB[['Date - Time','Max_BMSIAllRaw']]
+                    max_bmsi_raw=max_bmsi_raw[max_bmsi_raw['Date - Time']>=msi_last_date]
+                    if len(max_bmsi_raw)!=0:
+                        new_patient.email_text+=DecreasingMSI(max_bmsi_raw,0.1)
 
                     if send_email and new_patient.email_text!='': #email text will be empty if there are not alerts
                         msg_subject= 'Attention: Patient {}, {} ({})'.format(patientID,eye,host) #title
@@ -166,7 +172,7 @@ if __name__ =="__main__":
                 today = datetime.now(pytz.timezone("{}".format(set_tz)))
                 f.write(str(today.date()))
 
-            print (time.asctime(time.localtime(time.time())))
-            print ('elapsed_time=',time.time() - start_time)
-            print ('apollo')
-            time.sleep(300)
+        print (time.asctime(time.localtime(time.time())))
+        print ('elapsed_time=',time.time() - start_time)
+        print ('apollo')
+        time.sleep(300)

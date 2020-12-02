@@ -122,6 +122,7 @@ def DN_plots(data_folder, patient,save_path):
         time_table = dn_db[dn_db['Eye'] == eye]
         SrfVolume = time_table['SrfVolume Class']
         IrfVolume = time_table['IrfVolume Class']
+        FluidScore = time_table['ClassScoreFluid']
         MSI = time_table['MSI']
         Ineligible = time_table[time_table['EligibleQuant'] ==0]
         IneligibleDates = pd.to_datetime(Ineligible['Date - Time'], format='%Y-%m-%d-%H-%M-%S')
@@ -140,8 +141,9 @@ def DN_plots(data_folder, patient,save_path):
         ax2.plot(time_axis, MSI, marker='s', alpha=0.5,linestyle='--',zorder=2,label='MSI',color='blue',linewidth=1)
         ax1.scatter(IneligibleDates, Ineligiblesrf, s=30, c='white', zorder=3)
         ax1.scatter(IneligibleDates, Ineligibleirf, s=30, c='white', zorder=3)
+        ax1.scatter(time_axis,FluidScore,marker="^", s=30, c='m', zorder=3,label='Fluid Score')
         ax2.scatter(IneligibleDates, IneligibleMSI, s=30, c='white', zorder=3)
-        # ax.scatter(MaxGapQuant_dates, [0 for i in range(len(MaxGapQuant_dates))], s=35, c='black', zorder=3, label='MaxGap>300')
+
         if eye == 'L':
             plt.title('LEFT EYE - Fluid Volume vs. MSI', fontsize=16)
         if eye == 'R':

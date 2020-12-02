@@ -1,23 +1,14 @@
 import pandas as pd
 import numpy as np
 import os
-from os import path
-from datetime import date
-import scipy.io as sio
-from email.message import EmailMessage
-import smtplib
-import csv
 from Alerts import Alert
 import pickle
 pd.options.mode.chained_assignment = None
 from DB_connection import check_if_downloaded
-from Patient_Utils import check_vg_status,check_if_timeout,analysis_88
+from Patient_Utils import check_vg_status,check_DN_status, check_if_timeout,analysis_88
 import logging
 import glob
 from stat import S_ISREG, ST_CTIME, ST_MODE
-
-
-
 
 
 class Patient:
@@ -26,7 +17,6 @@ class Patient:
         self.patient_ID=patientID
         self.eye=eye
         self.email_text=''
-
         self.analysis_folder=(data_folder +'/'+ patientID + '/Analysis')
         if not os.path.isdir(self.analysis_folder):
             os.mkdir(self.analysis_folder)
@@ -50,7 +40,6 @@ class Patient:
                 self.DN_DB = self.DN_DB[self.DN_DB['Eye'] == eye]
         else:
             self.DN_DB = pd.DataFrame()
-
 
     def full_analysis(self,host,logger):
         if self.new==1:
@@ -95,10 +84,10 @@ class Patient:
                                 vg_4_folder = os.path.join(scan_path, 'VolumeGenerator_4')
                                 new_row.loc[0, 'Date - Time'] = date_time
                                 if self.DN_DB.empty or (os.path.isdir(vg_4_folder) and date_time not in self.DN_DB['Date - Time'].array) :
-                                    DN_new_row = self.extract_DeepNoa_data(vg_4_folder, new_row)
+                                    DN_new_row = self.extract_DeepNoa_data(scan,vg_4_folder, new_row)
                                     self.DN_DB = pd.concat([self.DN_DB, DN_new_row])
                                 elif date_time in self.DN_DB['Date - Time'].array and self.DN_DB[self.DN_DB['Date - Time']==date_time]['DN_output'].values==0:
-                                    DN_new_row = self.extract_DeepNoa_data(vg_4_folder, new_row)
+                                    DN_new_row = self.extract_DeepNoa_data(scan,vg_4_folder, new_row)
                                     self.DN_DB = pd.concat([self.DN_DB, DN_new_row])
 
                             except:
@@ -142,12 +131,12 @@ class Patient:
 
                     vg_4_folder = os.path.join(scan_path, 'VolumeGenerator_4')
                     if os.path.isdir(vg_4_folder):
-                        DN_new_row = self.extract_DeepNoa_data(vg_4_folder, new_row)
+                        DN_new_row = self.extract_DeepNoa_data(scan,vg_4_folder, new_row)
                         self.DN_DB = pd.concat([self.DN_DB, DN_new_row])
-                    #self.email_text += 'New Scan arrived from patient {} - {}'.format(self.patient_ID, scan_path)
+
+                    new_row.rename(columns={'MeanBMsiVsr': 'MSI'}, inplace=True)
 
                     ##~~~~~~~~~~Alerts~~~~ #####
-                    new_row.rename(columns={'MeanBMsiVsr': 'MSI' },inplace=True)
                     # check_for_alerts() receives a new row and checks if need to send an alert about it
                     email_text,new_row=self.alerts.check_for_alerts(self,new_row,scan_path)
                     self.email_text+=email_text
@@ -165,7 +154,7 @@ class Patient:
                    'MeanRetinalThicknessIIM','x_long_shift','y_long_shift','Compliance','TimeOut','Alert_for_clipped','88+ Class 1',
                'Full Scan(88)', '# Class 1', '# Class 2', '# Class 3', '% Class 1', '% Class 2',
                '% Class 3','Scan']
-        DN_columns=['Patient','Date - Time','Eye','DN_output','DN_ver','SrfVolume Class','IrfVolume Class','FluidVolume Class','ClassScoreFluid','Classifier Fluid Decision',
+        DN_columns=['Patient','Date - Time','Eye','DN_output','DN_Success','DN_ver','SrfVolume Class','IrfVolume Class','FluidVolume Class','ClassScoreFluid','Classifier Fluid Decision',
                     'Fluid Volume No Class','Fluid Decision No Class','EligibleQuant','MSI','MaxGap VG','MaxGapQuant',
                     '# Bscans in VS','# Bscans Valid for Quant','x_long_shift','y_long_shift','Scan']
 
@@ -372,12 +361,13 @@ class Patient:
         else:
             return 0,num_clipped_above_0,num_clipped_above_5
 
-
-    def extract_DeepNoa_data(self,vg_folder, new_row):
+    def extract_DeepNoa_data(self,scan,vg_folder, new_row):
         VG_Scan_path = os.path.join(vg_folder,'DB_Data','VG_Scan.csv')
         if not os.path.isfile(VG_Scan_path):
             print ('No VG_scan file for scan {}'.format(vg_folder))
             new_row.loc[0, 'DN_output'] = 0
+            new_row.loc[0, 'DN_Success'] = 0
+
             return new_row
         try:
             VG_Scan = pd.read_csv(VG_Scan_path)
@@ -389,6 +379,7 @@ class Patient:
         except:
             print('Cant get long shift data')
             new_row.loc[0, 'DN_output'] = 0
+            new_row.loc[0, 'DN_Success'] = 0
             return new_row
 
         # Find DN folder
@@ -401,6 +392,7 @@ class Patient:
                 return new_row
         except:
             new_row.loc[0, 'DN_output'] = 0
+            new_row.loc[0, 'DN_Success'] = 0
             return new_row
         DN_scan_path = DN_folder+r'/DB_Data/DN_scan.csv'
         DN_Bscan_VSR_path = DN_folder + r'/DB_Data/DN_Bscan_VSR.csv'
@@ -430,6 +422,32 @@ class Patient:
             new_row.loc[0, '# Bscans Valid for Quant'] = len(curr_csv)
         except:
             new_row.loc[0, 'DN_output'] = 0
+            new_row.loc[0, 'DN_Success'] = 0
+
+        try:
+            status = check_DN_status(DN_folder)
+            if status == 'running':
+                new_row.loc[0, 'DN_output'] = 2  # still running
+                new_row.loc[0, 'DN_Success'] = 0
+            elif status == '1':
+                print(scan + ': DN success, check for other error')
+                new_row.loc[0, 'DN_Success'] = 1
+            elif status == '0':
+                print(scan + ': VG early stop because of VG error')
+                new_row.loc[0, 'DN_Success'] = 0
+            elif status == '2':
+                print(scan + ': VG early stop because of input error or registration reference problem')
+                new_row.loc[0, 'DN_Success'] = 0
+            elif status == '3':
+                print(scan + ': Exit current VG process and later rerun VG by analyzer - ILM RPE memory error')
+                new_row.loc[0, 'DN_Success'] = 0
+            elif status == '4':
+                print(scan + ': Full process completed with problem notification')
+                new_row.loc[0, 'DN_Success'] = 0
+
+        except:
+            print('Unexpected error with VG for scan' + scan)
+            new_row.loc[0, 'DN_Success'] = 0
 
 
         return new_row
