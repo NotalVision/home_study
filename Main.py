@@ -25,12 +25,14 @@ if __name__ =="__main__":
         if 'V-S-G' in env:
             network='V-S-G-RNDSTORE'
             host='Cloud'
+            send_email = True
         else:
             network='nv-nas01'
             host = 'Local Host'
+            send_email = False
         studies=['Study_at_home','Study_US\Clinics\Elman',r'Study_US\Notal_tests']
         study_names=['Home Study', 'Elman Study','Notal Tests']
-        send_email = True  # can change to false if only want to generate plots
+          # can change to false if only want to generate plots
         dec_MSI_email=True
         for curr_study,study_name in zip(studies,study_names):
             data_folder = r'\\{}\Home_OCT_Repository\Clinical_studies\Notal-Home_OCT_study-box3.0\{}\Data'.format(network,curr_study)
@@ -80,7 +82,7 @@ if __name__ =="__main__":
 
                     max_bmsi_raw = new_patient.final_DB[['Date - Time','Max_BMSIAllRaw']]
                     max_bmsi_raw=max_bmsi_raw[max_bmsi_raw['Date - Time']>=msi_last_date]
-                    if len(max_bmsi_raw)!=0:
+                    if dec_MSI_email==True and (max_bmsi_raw)!=0:
                         new_patient.email_text+=DecreasingMSI(max_bmsi_raw,0.1)
 
                     if send_email and new_patient.email_text!='': #email text will be empty if there are not alerts
